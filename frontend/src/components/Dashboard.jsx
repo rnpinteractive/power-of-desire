@@ -1,3 +1,4 @@
+import { api } from '../services/api';
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";

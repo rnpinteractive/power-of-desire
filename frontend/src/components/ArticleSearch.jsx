@@ -1,3 +1,4 @@
+import { api } from '../services/api';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -53,7 +54,7 @@ const ArticleSearch = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("http://localhost:3000/api/articles/search");
+      const response = await api.fetch("/articles/search");
       if (!response.ok) throw new Error("Error fetching content");
       const data = await response.json();
 

@@ -1,3 +1,4 @@
+import { api } from '../services/api';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -45,7 +46,7 @@ const AdminPanel = () => {
     setError(null);
     try {
       console.log("Fetching users...");
-      const response = await fetch("http://localhost:3000/api/admin/users");
+      const response = await api.fetch("/admin/users");
 
       if (!response.ok) {
         throw new Error("Failed to fetch users");
@@ -77,7 +78,7 @@ const AdminPanel = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:3000/api/admin/users", {
+      const response = await api.fetch("/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newUser),

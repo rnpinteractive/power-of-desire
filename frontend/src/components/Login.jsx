@@ -1,3 +1,4 @@
+import { api } from '../services/api';
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../App";
@@ -17,7 +18,7 @@ const Login = () => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:3000/api/auth/login", {
+      const response = await api.fetch("/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

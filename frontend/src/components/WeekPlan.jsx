@@ -1,3 +1,4 @@
+import { api } from '../services/api';
 import React, { useState, useEffect, useContext } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { UserContext } from "../App";
@@ -169,7 +170,7 @@ const WeekPlan = () => {
     setError(null);
 
     try {
-      const url = `http://localhost:3000/api/users/${user.email}/plan/${dia}`;
+      const url = `/users/${user.email}/plan/${dia}`;
       const response = await fetch(
         forceRegenerate ? `${url}?regenerate=true` : url
       );
