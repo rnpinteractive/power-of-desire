@@ -1,0 +1,258 @@
+{
+  "nome": "Renan",
+  "email": "renan@gmail.com",
+  "telefone": null,
+  "createdAt": "2025-02-12T23:25:41.266Z",
+  "onboardingCompleted": true,
+  "objective": "Recuperar ex",
+  "timeWithoutContact": "Menos de 1 semana",
+  "separationCause": "Traição",
+  "messagesReaction": "Demorava mas respondia com carinho",
+  "lastMessage": "Disse que nao me ama\n",
+  "currentInterest": "Não tenho certeza",
+  "currentStatus": "Não sei",
+  "routine": "Nos víamos alguns dias da semana",
+  "recentAttempts": "Sim, ele ignora",
+  "desiredOutcome": "Reconciliação total",
+  "updatedAt": "2025-02-12T23:29:35.272Z",
+  "plans": {
+    "1": {
+      "day": 1,
+      "title": "Reignite the Spark",
+      "subtitle": "A bold approach to disrupt his status quo and stir emotions",
+      "message": {
+        "text": "Hey, I've been doing some thinking. Remember those moments that made us smile? I miss that side of life. Just wanted you to know that I'm focusing on my own happiness now. Hope you're finding yours too.",
+        "context": "Send this message late afternoon (around 4 PM) when he is likely winding down from work, making him more receptive to emotional reminiscing."
+      },
+      "tips": [
+        {
+          "title": "Leverage Nostalgia",
+          "text": "Invoke shared positive memories to remind him of the bond you once had, creating a longing for those feelings."
+        },
+        {
+          "title": "Show Independence",
+          "text": "Highlight your focus on personal happiness to create curiosity and provoke a response; it makes you appear desirable and self-sufficient."
+        },
+        {
+          "title": "Timing is Key",
+          "text": "Engage him during peak emotional hours—late afternoon or early evening—when people are generally more reflective about their relationships."
+        }
+      ],
+      "avoid": [
+        {
+          "title": "Avoid Over-Texting",
+          "text": "Sending multiple messages can come off as desperate, pushing him further away instead of drawing him in."
+        },
+        {
+          "title": "Avoid Negative References",
+          "text": "Mentioning past conflicts or the breakup can trigger defensiveness; focus on positivity to keep the conversation open and inviting."
+        }
+      ],
+      "generatedAt": "2025-02-15T17:52:03.467Z"
+    },
+    "2": {
+      "day": 2,
+      "title": "Ignite the Spark: A Strategic Approach",
+      "subtitle": "Leveraging Emotions to Reconnect and Reignite Interest",
+      "message": {
+        "text": "Hey! I’ve been reflecting on us and I realize how rare our connection is. I hope you’re doing well, and it’s okay if you need time. Just wanted to share that I still care about you deeply. No pressure, just thinking of the good times we had.",
+        "context": "This message aims to evoke nostalgia and emotional connection while showing vulnerability, sent at a time when he might be more relaxed, such as the evening."
+      },
+      "tips": [
+        {
+          "title": "Create Emotional Resonance",
+          "text": "Remind him of shared experiences that brought joy, subtly highlighting what he misses without being overtly sentimental."
+        },
+        {
+          "title": "Maintain Mystery and Intrigue",
+          "text": "Share a brief, engaging story about something exciting or interesting you've done recently to pique his curiosity and make him wonder about your life."
+        },
+        {
+          "title": "Be Confident and Unattached",
+          "text": "Project confidence in your own happiness and independence to entice him to want to reconnect, making it clear that you're not desperate for his attention."
+        }
+      ],
+      "avoid": [
+        {
+          "title": "Avoid Over-Communicating",
+          "text": "Constant messaging can come off as needy or insecure, which may push him further away instead of drawing him in."
+        },
+        {
+          "title": "Avoid Negative Conversations",
+          "text": "Bringing up past grievances or anger will only create resistance; focus on positivity to keep the door open for reconnection."
+        }
+      ],
+      "generatedAt": "2025-02-15T17:34:58.389Z"
+    },
+    "3": {
+      "dia": 3,
+      "titulo": "Cultivando a Compreensão e o Espaço",
+      "subtitulo": "É hora de mostrar empatia e respeitar os sentimentos do outro.",
+      "mensagem": {
+        "texto": "Oi, só queria que você soubesse que entendo que as coisas estão difíceis e respeito seu espaço. Estou aqui se precisar conversar.",
+        "contexto": "Essa mensagem tem como objetivo mostrar que você está disposto a respeitar os sentimentos dela, criando um ambiente de segurança e compreensão."
+      },
+      "dicas": [
+        {
+          "titulo": "Mantenha a Calma",
+          "texto": "Evite demonstrar desespero ou ansiedade em suas interações. Isso pode afastá-la ainda mais."
+        },
+        {
+          "titulo": "Demonstre Empatia",
+          "texto": "Mostre que você entende a dor da traição e esteja aberto a ouvir o que ela tem a dizer sobre os sentimentos dela."
+        },
+        {
+          "titulo": "Respeite o Tempo Delas",
+          "texto": "Dê espaço para ela processar seus sentimentos. Não pressione por respostas imediatas."
+        }
+      ],
+      "evitar": [
+        {
+          "titulo": "Evitar Mensagens Excessivas",
+          "texto": "Mandar muitas mensagens pode ser visto como carência e pode afastá-la ainda mais."
+        },
+        {
+          "titulo": "Não Falar Sobre Relações Futuras",
+          "texto": "Evite mencionar reconciliação ou planos futuros agora, pois isso pode causar pressão desnecessária."
+        }
+      ],
+      "generatedAt": "2025-02-13T19:44:59.743Z"
+    },
+    "4": {
+      "dia": 4,
+      "titulo": "Reconstruindo a Conexão",
+      "subtitulo": "Aproveite o momento para mostrar empatia e compreensão",
+      "mensagem": {
+        "texto": "Oi [Nome], espero que você esteja bem. Queria apenas dizer que entendo o quanto essa situação é difícil e que estou aqui para ouvir se você quiser desabafar.",
+        "contexto": "Esta mensagem demonstra empatia e abre espaço para uma conversa mais profunda, mostrando que você se importa com os sentimentos dela."
+      },
+      "dicas": [
+        {
+          "titulo": "Ouça ativamente",
+          "texto": "Se ela responder, esteja preparado para ouvir sem interromper. Isso pode ajudar a estabelecer um diálogo aberto."
+        },
+        {
+          "titulo": "Seja honesto sobre seus sentimentos",
+          "texto": "Compartilhe como você se sente, mas evite pressioná-la. Fale sobre o que aprendeu com a separação."
+        },
+        {
+          "titulo": "Mantenha um tom positivo",
+          "texto": "Evite trazer à tona discussões sobre a traição ou problemas do passado. Foque nas coisas boas que vocês viveram juntos."
+        }
+      ],
+      "evitar": [
+        {
+          "titulo": "Não pressione por respostas imediatas",
+          "texto": "Forçar uma resposta pode afastá-la ainda mais. Dê espaço para que ela processe seus sentimentos."
+        },
+        {
+          "titulo": "Evite falar sobre recomeços agora",
+          "texto": "Falar sobre voltar pode ser muito intenso neste momento. Foque em reconstruir a amizade primeiro."
+        }
+      ],
+      "generatedAt": "2025-02-13T19:45:18.203Z"
+    },
+    "5": {
+      "dia": 5,
+      "titulo": "Reconstruindo a Conexão",
+      "subtitulo": "A importância da empatia e do entendimento no caminho da reconquista",
+      "mensagem": {
+        "texto": "Oi, espero que você esteja bem. Tenho pensado muito sobre nós e quero te pedir desculpas de verdade por tudo que aconteceu. Estou aprendendo com meus erros e gostaria de entender melhor como você se sente.",
+        "contexto": "Esta mensagem visa demonstrar seu arrependimento genuíno e abrir espaço para um diálogo mais profundo, sem pressionar."
+      },
+      "dicas": [
+        {
+          "titulo": "Mostre Vulnerabilidade",
+          "texto": "Compartilhe seus sentimentos de forma honesta, isso pode ajudar a criar empatia e conexão."
+        },
+        {
+          "titulo": "Escute Ativamente",
+          "texto": "Se ele(a) responder, escute com atenção suas palavras. Isso demonstra que você valoriza os sentimentos dele(a)."
+        },
+        {
+          "titulo": "Evite Pressionar",
+          "texto": "Deixe claro que não espera uma resposta imediata ou uma decisão. Dê espaço para que ele(a) processe."
+        }
+      ],
+      "evitar": [
+        {
+          "titulo": "Não Minimize os Sentimentos Dele(a)",
+          "texto": "Evitar desmerecer a dor causada pela traição é crucial. Ignorar os sentimentos dele(a) pode afastá-lo(a) ainda mais."
+        },
+        {
+          "titulo": "Evitar Mensagens Excessivas",
+          "texto": "Enviar muitas mensagens pode ser visto como desespero. Mantenha a comunicação equilibrada e respeitosa."
+        }
+      ],
+      "generatedAt": "2025-02-13T19:40:55.319Z"
+    },
+    "6": {
+      "dia": 6,
+      "titulo": "Reconstruindo a conexão",
+      "subtitulo": "Foque em restabelecer um diálogo positivo e sincero",
+      "mensagem": {
+        "texto": "Oi, estava pensando em como as coisas mudaram rápido entre nós. Eu realmente valorizo o que tivemos e gostaria de conversar sobre isso quando você se sentir à vontade.",
+        "contexto": "Esta mensagem visa abrir um espaço para diálogo sem pressão, mostrando que você ainda valoriza a relação e está disposto a ouvir."
+      },
+      "dicas": [
+        {
+          "titulo": "Mantenha a leveza na conversa",
+          "texto": "Evite trazer à tona questões pesadas ou discussões do passado. Foque em tópicos neutros que possam gerar boas lembranças."
+        },
+        {
+          "titulo": "Seja paciente",
+          "texto": "Dê espaço para que ele(a) responda no tempo dele(a). Não pressione por respostas rápidas ou decisões imediatas."
+        },
+        {
+          "titulo": "Mostre seu crescimento pessoal",
+          "texto": "Compartilhe brevemente algo positivo que aconteceu com você desde a separação, demonstrando que está evoluindo como pessoa."
+        }
+      ],
+      "evitar": [
+        {
+          "titulo": "Não seja insistente",
+          "texto": "Evite enviar várias mensagens seguidas. Isso pode parecer desespero e afastar ainda mais a pessoa."
+        },
+        {
+          "titulo": "Evite discussões sobre traição",
+          "texto": "Relembrar o motivo da separação pode reabrir feridas. Foque em construir um novo diálogo ao invés de revisitar o passado doloroso."
+        }
+      ],
+      "generatedAt": "2025-02-13T19:50:17.280Z"
+    },
+    "7": {
+      "dia": 7,
+      "titulo": "Abertura para o recomeço",
+      "subtitulo": "Inicie uma conversa leve e sincera",
+      "mensagem": {
+        "texto": "Oi, estive pensando em nós e queria saber como você está. Estou disposto a conversar quando você se sentir confortável.",
+        "contexto": "Esta mensagem é um convite para abrir um canal de comunicação, mostrando que você está aberto ao diálogo sem pressionar."
+      },
+      "dicas": [
+        {
+          "titulo": "Seja autêntico",
+          "texto": "Mostre seus verdadeiros sentimentos e pensamentos, evite mensagens genéricas ou forçadas."
+        },
+        {
+          "titulo": "Mantenha a leveza",
+          "texto": "Evite trazer à tona a traição ou discussões pesadas neste primeiro contato; foque em reconectar-se."
+        },
+        {
+          "titulo": "Dê espaço",
+          "texto": "Após enviar a mensagem, aguarde a resposta sem cobrar ou pressionar; isso demonstra respeito pelo tempo dela."
+        }
+      ],
+      "evitar": [
+        {
+          "titulo": "Não mencione a traição inicialmente",
+          "texto": "Falar sobre a traição logo de cara pode afastá-la ainda mais; concentre-se em restabelecer a conexão primeiro."
+        },
+        {
+          "titulo": "Evite desespero",
+          "texto": "Mensagens excessivas ou insistência podem ser vistas como necessidade desesperada, o que pode gerar afastamento."
+        }
+      ],
+      "generatedAt": "2025-02-13T19:50:29.781Z"
+    }
+  }
+}
