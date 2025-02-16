@@ -29,11 +29,30 @@ router.post("/onboarding", async (req, res) => {
   }
 });
 
+router.get("/refund/:email", async (req, res) => {
+  try {
+    const refundPath = path.join(
+      __dirname,
+      "..",
+      "data",
+      "users",
+      req.params.email,
+      "refund.json"
+    );
+
+    await fs.access(refundPath);
+    const refundData = JSON.parse(await fs.readFile(refundPath, "utf8"));
+    res.json(refundData);
+  } catch {
+    res.json({ exists: false });
+  }
+});
+
 router.get("/:email/plan/:dia", async (req, res) => {
   try {
     const { email, dia } = req.params;
     const { regenerate } = req.query;
-    
+
     const planPath = path.join(
       __dirname,
       "..",
