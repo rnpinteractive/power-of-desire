@@ -39,8 +39,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const response = await fetch(
-          "http://localhost:3000/api/articles/search"
+        const response = await api.fetch("/articles/search"
         );
         const data = await response.json();
         setArticles(data);
@@ -58,8 +57,7 @@ const Dashboard = () => {
     const checkRefund = async () => {
       if (user?.email) {
         try {
-          const response = await fetch(
-            `http://localhost:3000/api/users/refund/${user.email}`
+          const response = await api.fetch(`/users/refund/${user.email}`
           );
           const data = await response.json();
           setHasRefund(!!data.email);

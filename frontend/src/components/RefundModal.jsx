@@ -11,8 +11,7 @@ const RefundModal = ({ isOpen, onClose, userEmail }) => {
       setLoading(true);
 
       // PRIMEIRO verifica se já existe reembolso
-      const response = await fetch(
-        `http://localhost:3000/api/users/refund/${userEmail}`
+      const response = await api.fetch(`/users/refund/${userEmail}`
       );
       const data = await response.json();
 
@@ -24,8 +23,7 @@ const RefundModal = ({ isOpen, onClose, userEmail }) => {
       }
 
       // Se não existe, cria o reembolso
-      const createResponse = await fetch(
-        "http://localhost:3000/api/users/refund",
+      const createResponse = await api.fetch("/users/refund",
         {
           method: "POST",
           headers: {

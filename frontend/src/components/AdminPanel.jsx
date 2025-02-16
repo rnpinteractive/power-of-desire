@@ -106,8 +106,7 @@ const AdminPanel = () => {
     }
 
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/admin/users/${selectedUser.email}`,
+      const response = await api.fetch(`/admin/users/${selectedUser.email}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -136,8 +135,7 @@ const AdminPanel = () => {
     }
 
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/admin/users/${user.email}`,
+      const response = await api.fetch(`/admin/users/${user.email}`,
         {
           method: "DELETE",
         }
@@ -159,8 +157,7 @@ const AdminPanel = () => {
 
   const handleResetOnboarding = async (user) => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/admin/users/${user.email}/reset-onboarding`,
+      const response = await api.fetch(`/admin/users/${user.email}/reset-onboarding`,
         {
           method: "POST",
         }

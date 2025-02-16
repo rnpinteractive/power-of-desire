@@ -1,147 +1,94 @@
 const fs = require("fs").promises;
 const path = require("path");
 
-// Criar o serviço de API
-const createApiService = async () => {
-  const apiServiceContent = `const API_BASE_URL = import.meta.env.PROD 
-  ? 'https://pod.makehimbeg.com/api'
-  : 'http://localhost:3000/api';
+const files = {
+  "frontend/src/components/AdminPanel.jsx": [
+    {
+      from: /fetch\(\s*`http:\/\/localhost:3000\/api\/admin\/users\/\${selectedUser\.email}`/g,
+      to: "api.fetch(`/admin/users/${selectedUser.email}`",
+    },
+    {
+      from: /fetch\(\s*`http:\/\/localhost:3000\/api\/admin\/users\/\${user\.email}`/g,
+      to: "api.fetch(`/admin/users/${user.email}`",
+    },
+    {
+      from: /fetch\(\s*`http:\/\/localhost:3000\/api\/admin\/users\/\${user\.email}\/reset-onboarding`/g,
+      to: "api.fetch(`/admin/users/${user.email}/reset-onboarding`",
+    },
+  ],
+  "frontend/src/components/Dashboard.jsx": [
+    {
+      from: /fetch\(\s*"http:\/\/localhost:3000\/api\/articles\/search"/g,
+      to: 'api.fetch("/articles/search"',
+    },
+    {
+      from: /fetch\(\s*`http:\/\/localhost:3000\/api\/users\/refund\/\${user\.email}`/g,
+      to: "api.fetch(`/users/refund/${user.email}`",
+    },
+  ],
+  "frontend/src/components/Onboarding.jsx": [
+    {
+      from: /fetch\(\s*"http:\/\/localhost:3000\/api\/users\/onboarding"/g,
+      to: 'api.fetch("/users/onboarding"',
+    },
+  ],
+  "frontend/src/components/RefundModal.jsx": [
+    {
+      from: /fetch\(\s*`http:\/\/localhost:3000\/api\/users\/refund\/\${userEmail}`/g,
+      to: "api.fetch(`/users/refund/${userEmail}`",
+    },
+    {
+      from: /fetch\(\s*"http:\/\/localhost:3000\/api\/users\/refund"/g,
+      to: 'api.fetch("/users/refund"',
+    },
+  ],
+  "frontend/src/pages/ArticlePage.jsx": [
+    {
+      from: /fetch\(\s*`http:\/\/localhost:3000\/api\/articles\/\${id}`/g,
+      to: "api.fetch(`/articles/${id}`",
+    },
+  ],
+};
 
-export const api = {
-  baseURL: API_BASE_URL,
-  async fetch(endpoint, options = {}) {
-    const response = await fetch(\`\${API_BASE_URL}\${endpoint}\`, options);
-    return response;
+const addImport = (content) => {
+  if (!content.includes("import { api }")) {
+    return "import { api } from '../services/api';\n" + content;
   }
-};
-`;
-
-  const servicesDir = path.join(__dirname, "frontend", "src", "services");
-  await fs.mkdir(servicesDir, { recursive: true });
-  await fs.writeFile(path.join(servicesDir, "api.js"), apiServiceContent);
-  console.log("✅ Created api.js service");
+  return content;
 };
 
-// Função para ler e atualizar um arquivo
 const updateFile = async (filePath, replacements) => {
   try {
+    console.log(`📝 Processando ${filePath}...`);
     let content = await fs.readFile(filePath, "utf-8");
 
-    // Adicionar import do serviço de API se necessário
-    if (content.includes("http://localhost:3000/api")) {
-      const importStatement = `import { api } from '../services/api';\n`;
-      if (!content.includes(importStatement)) {
-        content = importStatement + content;
-      }
-    }
+    // Adicionar import se necessário
+    content = addImport(content);
 
-    // Fazer as substituições
+    // Fazer substituições
     replacements.forEach(({ from, to }) => {
-      content = content.replace(new RegExp(from, "g"), to);
+      content = content.replace(from, to);
     });
 
     await fs.writeFile(filePath, content);
-    console.log(`✅ Updated ${path.basename(filePath)}`);
+    console.log(`✅ Atualizado: ${filePath}`);
   } catch (error) {
-    console.error(`❌ Error updating ${filePath}:`, error);
+    console.error(`❌ Erro ao processar ${filePath}:`, error);
   }
 };
 
-// Lista de arquivos e suas substituições
-const updates = [
-  {
-    file: "frontend/src/components/Login.jsx",
-    replacements: [
-      {
-        from: 'fetch\\("http://localhost:3000/api/auth/login"',
-        to: 'api.fetch("/auth/login"',
-      },
-    ],
-  },
-  {
-    file: "frontend/src/components/ArticleSearch.jsx",
-    replacements: [
-      {
-        from: 'fetch\\("http://localhost:3000/api/articles/search"',
-        to: 'api.fetch("/articles/search"',
-      },
-    ],
-  },
-  {
-    file: "frontend/src/pages/ArticlePage.jsx",
-    replacements: [
-      {
-        from: "fetch\\(`http://localhost:3000/api/articles/\\${id}`",
-        to: "api.fetch(`/articles/${id}`",
-      },
-    ],
-  },
-  {
-    file: "frontend/src/components/Dashboard.jsx",
-    replacements: [
-      {
-        from: 'fetch\\("http://localhost:3000/api/articles/search"',
-        to: 'api.fetch("/articles/search"',
-      },
-      {
-        from: "fetch\\(`http://localhost:3000/api/users/refund/\\${user.email}`",
-        to: "api.fetch(`/users/refund/${user.email}`",
-      },
-    ],
-  },
-  {
-    file: "frontend/src/components/WeekPlan.jsx",
-    replacements: [
-      {
-        from: "`http://localhost:3000/api/users/\\${user.email}/plan/\\${dia}`",
-        to: "`/users/${user.email}/plan/${dia}`",
-      },
-    ],
-  },
-  {
-    file: "frontend/src/components/Onboarding.jsx",
-    replacements: [
-      {
-        from: 'fetch\\("http://localhost:3000/api/users/onboarding"',
-        to: 'api.fetch("/users/onboarding"',
-      },
-    ],
-  },
-  {
-    file: "frontend/src/components/AdminPanel.jsx",
-    replacements: [
-      {
-        from: 'fetch\\("http://localhost:3000/api/admin/users"',
-        to: 'api.fetch("/admin/users"',
-      },
-    ],
-  },
-  {
-    file: "frontend/src/components/RefundModal.jsx",
-    replacements: [
-      {
-        from: "fetch\\(`http://localhost:3000/api/users/refund/\\${userEmail}`",
-        to: "api.fetch(`/users/refund/${userEmail}`",
-      },
-    ],
-  },
-];
-
-// Função principal
 const main = async () => {
-  try {
-    // Criar serviço de API
-    await createApiService();
+  console.log("🚀 Iniciando atualizações das chamadas API...\n");
 
-    // Atualizar todos os arquivos
-    for (const update of updates) {
-      await updateFile(path.join(__dirname, update.file), update.replacements);
-    }
-
-    console.log("\n✨ All files updated successfully!");
-  } catch (error) {
-    console.error("❌ Error:", error);
+  for (const [file, replacements] of Object.entries(files)) {
+    await updateFile(file, replacements);
   }
+
+  console.log("\n✨ Processo concluído!");
+  console.log("\nPróximos passos:");
+  console.log("1. Verifique as alterações");
+  console.log("2. Faça commit e push para o GitHub");
+  console.log("3. Execute o deploy.sh no servidor");
 };
 
 main();

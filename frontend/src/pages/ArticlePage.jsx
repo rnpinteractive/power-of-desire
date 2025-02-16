@@ -24,8 +24,7 @@ const ArticlePage = () => {
   useEffect(() => {
     const fetchArticle = async () => {
       try {
-        const response = await fetch(
-          `http://localhost:3000/api/articles/${id}`
+        const response = await api.fetch(`/articles/${id}`
         );
         if (!response.ok) throw new Error("Article not found");
         const data = await response.json();

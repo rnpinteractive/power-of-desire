@@ -1,4 +1,4 @@
-import { api } from '../services/api';
+import { api } from "../services/api";
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -124,8 +124,7 @@ const Onboarding = () => {
       setCurrentStep((prev) => prev + 1);
     } else {
       try {
-        const response = await fetch(
-          "http://localhost:3000/api/users/onboarding",
+        const response = await api.fetch("/users/onboarding",
           {
             method: "POST",
             headers: {
