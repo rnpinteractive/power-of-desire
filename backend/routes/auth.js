@@ -1,3 +1,4 @@
+// backend/routes/auth.js
 const express = require("express");
 const router = express.Router();
 const fs = require("fs").promises;
@@ -5,51 +6,36 @@ const path = require("path");
 
 router.post("/login", async (req, res) => {
   const { email } = req.body;
+
   if (!email) {
     return res.status(400).json({ error: "Email is required" });
   }
 
-  const userProfilePath = path.join(
-    __dirname,
-    "..",
-    "data",
-    "users",
-    email,
-    "profile.json"
-  );
-
   try {
-    await fs.access(userProfilePath);
-    const userData = await fs.readFile(userProfilePath, "utf8");
-    const user = JSON.parse(userData);
+    // APENAS verifica na estrutura nova - pasta do usuário + profile.json
+    const userDir = path.join(__dirname, "..", "data", "users", email);
+    const profilePath = path.join(userDir, "profile.json");
 
-    // Tenta carregar dados do onboarding se existirem
+    await fs.access(profilePath);
+    const userData = JSON.parse(await fs.readFile(profilePath, "utf8"));
+
+    // Se encontrou o usuário, tenta carregar onboarding
     try {
-      const onboardingPath = path.join(
-        __dirname,
-        "..",
-        "data",
-        "users",
-        email,
-        "onboarding.json"
-      );
+      const onboardingPath = path.join(userDir, "onboarding.json");
       const onboardingData = JSON.parse(
         await fs.readFile(onboardingPath, "utf8")
       );
-      Object.assign(user, onboardingData);
+      Object.assign(userData, onboardingData);
     } catch (err) {
-      // Ignora se não tiver dados de onboarding
+      // Ignora se não tiver onboarding
     }
 
-    res.json({
-      user,
-      isNew: false,
-    });
+    res.json({ user: userData });
   } catch (error) {
-    // Não cria novo usuário, apenas retorna 404
-    res.status(404).json({
-      error: "Email não cadastrado. Entre em contato com o suporte.",
-    });
+    // Se não encontrou, retorna 404 - NADA é criado
+    res
+      .status(404)
+      .json({ error: "User not registered. Please contact support." });
   }
 });
 
