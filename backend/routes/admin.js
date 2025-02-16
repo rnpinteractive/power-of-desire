@@ -3,52 +3,37 @@ const router = express.Router();
 const fs = require("fs").promises;
 const path = require("path");
 
-// Listar todos usuários
 router.get("/users", async (req, res) => {
   try {
     const usersDir = path.join(__dirname, "..", "data", "users");
-    const files = await fs.readdir(usersDir);
+    const userDirs = await fs.readdir(usersDir);
+    
     const users = await Promise.all(
-      files.map(async (file) => {
-        const content = await fs.readFile(path.join(usersDir, file), "utf8");
-        return JSON.parse(content);
+      userDirs.map(async (userDir) => {
+        try {
+          const profilePath = path.join(usersDir, userDir, "profile.json");
+          const onboardingPath = path.join(usersDir, userDir, "onboarding.json");
+          
+          const profile = JSON.parse(await fs.readFile(profilePath, "utf8"));
+          try {
+            const onboarding = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
+            return { ...profile, ...onboarding };
+          } catch (err) {
+            return profile;
+          }
+        } catch (error) {
+          console.error(`Error reading user ${userDir}:`, error);
+          return null;
+        }
       })
-    );
+    ).then(users => users.filter(Boolean));
+    
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: "Erro ao listar usuários" });
   }
 });
 
-// Criar artigo
-router.post("/articles", async (req, res) => {
-  try {
-    const { titulo, conteudo, palavras_chave } = req.body;
-    const id = titulo.toLowerCase().replace(/\s+/g, "-");
-    const articlePath = path.join(
-      __dirname,
-      "..",
-      "data",
-      "articles",
-      `${id}.json`
-    );
-
-    const article = {
-      id,
-      titulo,
-      conteudo,
-      palavras_chave,
-      createdAt: new Date().toISOString(),
-    };
-
-    await fs.writeFile(articlePath, JSON.stringify(article, null, 2));
-    res.json(article);
-  } catch (error) {
-    res.status(500).json({ error: "Erro ao criar artigo" });
-  }
-});
-
-// Rota para criar usuário
 router.post("/users", async (req, res) => {
   try {
     const { nome, email, telefone } = req.body;
@@ -57,13 +42,11 @@ router.post("/users", async (req, res) => {
       return res.status(400).json({ error: "Nome e email são obrigatórios" });
     }
 
-    const userPath = path.join(
-      __dirname,
-      "..",
-      "data",
-      "users",
-      `${email}.json`
-    );
+    const userDir = path.join(__dirname, "..", "data", "users", email);
+    const profilePath = path.join(userDir, "profile.json");
+
+    await fs.mkdir(userDir, { recursive: true });
+    await fs.mkdir(path.join(userDir, "plans"), { recursive: true });
 
     const userData = {
       nome,
@@ -73,10 +56,23 @@ router.post("/users", async (req, res) => {
       onboardingCompleted: false,
     };
 
-    await fs.writeFile(userPath, JSON.stringify(userData, null, 2));
+    await fs.writeFile(profilePath, JSON.stringify(userData, null, 2));
     res.json(userData);
   } catch (error) {
     res.status(500).json({ error: "Erro ao criar usuário" });
   }
 });
+
+router.delete("/users/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+    const userDir = path.join(__dirname, "..", "data", "users", email);
+    
+    await fs.rm(userDir, { recursive: true, force: true });
+    res.json({ message: "Usuário deletado com sucesso" });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao deletar usuário" });
+  }
+});
+
 module.exports = router;

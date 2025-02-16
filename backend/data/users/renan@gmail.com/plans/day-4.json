@@ -1,0 +1,34 @@
+{
+  "dia": 4,
+  "titulo": "Reconstruindo a Conexão",
+  "subtitulo": "Aproveite o momento para mostrar empatia e compreensão",
+  "mensagem": {
+    "texto": "Oi [Nome], espero que você esteja bem. Queria apenas dizer que entendo o quanto essa situação é difícil e que estou aqui para ouvir se você quiser desabafar.",
+    "contexto": "Esta mensagem demonstra empatia e abre espaço para uma conversa mais profunda, mostrando que você se importa com os sentimentos dela."
+  },
+  "dicas": [
+    {
+      "titulo": "Ouça ativamente",
+      "texto": "Se ela responder, esteja preparado para ouvir sem interromper. Isso pode ajudar a estabelecer um diálogo aberto."
+    },
+    {
+      "titulo": "Seja honesto sobre seus sentimentos",
+      "texto": "Compartilhe como você se sente, mas evite pressioná-la. Fale sobre o que aprendeu com a separação."
+    },
+    {
+      "titulo": "Mantenha um tom positivo",
+      "texto": "Evite trazer à tona discussões sobre a traição ou problemas do passado. Foque nas coisas boas que vocês viveram juntos."
+    }
+  ],
+  "evitar": [
+    {
+      "titulo": "Não pressione por respostas imediatas",
+      "texto": "Forçar uma resposta pode afastá-la ainda mais. Dê espaço para que ela processe seus sentimentos."
+    },
+    {
+      "titulo": "Evite falar sobre recomeços agora",
+      "texto": "Falar sobre voltar pode ser muito intenso neste momento. Foque em reconstruir a amizade primeiro."
+    }
+  ],
+  "generatedAt": "2025-02-13T19:45:18.203Z"
+}

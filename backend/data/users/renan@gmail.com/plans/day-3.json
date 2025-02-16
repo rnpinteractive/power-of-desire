@@ -1,0 +1,34 @@
+{
+  "dia": 3,
+  "titulo": "Cultivando a Compreensão e o Espaço",
+  "subtitulo": "É hora de mostrar empatia e respeitar os sentimentos do outro.",
+  "mensagem": {
+    "texto": "Oi, só queria que você soubesse que entendo que as coisas estão difíceis e respeito seu espaço. Estou aqui se precisar conversar.",
+    "contexto": "Essa mensagem tem como objetivo mostrar que você está disposto a respeitar os sentimentos dela, criando um ambiente de segurança e compreensão."
+  },
+  "dicas": [
+    {
+      "titulo": "Mantenha a Calma",
+      "texto": "Evite demonstrar desespero ou ansiedade em suas interações. Isso pode afastá-la ainda mais."
+    },
+    {
+      "titulo": "Demonstre Empatia",
+      "texto": "Mostre que você entende a dor da traição e esteja aberto a ouvir o que ela tem a dizer sobre os sentimentos dela."
+    },
+    {
+      "titulo": "Respeite o Tempo Delas",
+      "texto": "Dê espaço para ela processar seus sentimentos. Não pressione por respostas imediatas."
+    }
+  ],
+  "evitar": [
+    {
+      "titulo": "Evitar Mensagens Excessivas",
+      "texto": "Mandar muitas mensagens pode ser visto como carência e pode afastá-la ainda mais."
+    },
+    {
+      "titulo": "Não Falar Sobre Relações Futuras",
+      "texto": "Evite mencionar reconciliação ou planos futuros agora, pois isso pode causar pressão desnecessária."
+    }
+  ],
+  "generatedAt": "2025-02-13T19:44:59.743Z"
+}

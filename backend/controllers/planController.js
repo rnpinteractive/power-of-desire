@@ -71,11 +71,9 @@ Return ONLY a VALID JSON OBJECT in the EXACT format below:
       frequency_penalty: 0.3,
     });
 
-    // Garantir que a resposta seja um JSON válido
     const responseContent = completion.choices[0].message.content.trim();
     const planDoDia = JSON.parse(responseContent);
 
-    // Validar estrutura do plano
     if (
       !planDoDia.day ||
       !planDoDia.title ||
@@ -83,29 +81,27 @@ Return ONLY a VALID JSON OBJECT in the EXACT format below:
       !Array.isArray(planDoDia.tips) ||
       !Array.isArray(planDoDia.avoid)
     ) {
-      throw new Error(
-        "The AI response does not contain the expected structure"
-      );
+      throw new Error("The AI response does not contain the expected structure");
     }
 
-    // Salvar o plano no arquivo do usuário
-    const userPath = path.join(
+    // Salvar o plano na pasta do usuário
+    const planDir = path.join(
       __dirname,
       "../data/users",
-      `${userData.email}.json`
+      userData.email,
+      "plans"
     );
-    const user = JSON.parse(await fs.readFile(userPath, "utf8"));
-
-    if (!user.plans) {
-      user.plans = {};
-    }
-
-    user.plans[day] = {
-      ...planDoDia,
-      generatedAt: new Date().toISOString(),
-    };
-
-    await fs.writeFile(userPath, JSON.stringify(user, null, 2));
+    
+    await fs.mkdir(planDir, { recursive: true });
+    
+    const planPath = path.join(planDir, `day-${day}.json`);
+    await fs.writeFile(
+      planPath,
+      JSON.stringify({
+        ...planDoDia,
+        generatedAt: new Date().toISOString()
+      }, null, 2)
+    );
 
     return planDoDia;
   } catch (error) {

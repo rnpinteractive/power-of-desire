@@ -170,14 +170,17 @@ const WeekPlan = () => {
     setError(null);
 
     try {
-      const url = `/users/${user.email}/plan/${dia}${forceRegenerate ? '?regenerate=true' : ''}`;
-      const response = await api.fetch(url);
+      const url = `/users/${user.email}/plan/${dia}`;
+      const response = await fetch(
+        forceRegenerate ? `${url}?regenerate=true` : url
+      );
 
       if (!response.ok) {
         throw new Error("Error loading plan");
       }
 
       const data = await response.json();
+      // Normaliza o plano recebido
       const normalizedPlan = normalizePlan(data);
       setPlanDoDia(normalizedPlan);
     } catch (error) {

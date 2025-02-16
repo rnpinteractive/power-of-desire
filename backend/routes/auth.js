@@ -9,28 +9,43 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ error: "Email is required" });
   }
 
-  const userFilePath = path.join(
+  const userProfilePath = path.join(
     __dirname,
     "..",
     "data",
     "users",
-    `${email}.json`
+    email,
+    "profile.json"
   );
 
   try {
-    // Verifica se o arquivo existe
-    await fs.access(userFilePath);
-    // Se existe, retorna os dados do usuário
-    const userData = await fs.readFile(userFilePath, "utf8");
+    await fs.access(userProfilePath);
+    const userData = await fs.readFile(userProfilePath, "utf8");
     const user = JSON.parse(userData);
+
+    // Carregar dados do onboarding se existirem
+    try {
+      const onboardingPath = path.join(
+        __dirname,
+        "..",
+        "data",
+        "users",
+        email,
+        "onboarding.json"
+      );
+      const onboardingData = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
+      Object.assign(user, onboardingData);
+    } catch (err) {
+      // Ignora se não tiver dados de onboarding
+    }
+
     res.json({
       user,
       isNew: false,
     });
   } catch (error) {
-    // Se o arquivo não existe, retorna erro
     res.status(404).json({
-      error: "User not found. Please contact support to register.",
+      error: "User not registered. Please contact support.",
       isNew: true,
     });
   }

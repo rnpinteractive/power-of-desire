@@ -45,12 +45,21 @@ const AdminPanel = () => {
     setLoading(true);
     setError(null);
     try {
+      console.log("Fetching users...");
       const response = await api.fetch("/admin/users");
+
       if (!response.ok) {
         throw new Error("Failed to fetch users");
       }
+
       const data = await response.json();
-      const validUsers = Array.isArray(data) ? data.filter(user => user.email) : [];
+      console.log("Users data:", data);
+
+      // Filtra somente os registros válidos que possuem email
+      const validUsers = Array.isArray(data)
+        ? data.filter((user) => user.email)
+        : (data.users || []).filter((user) => user.email);
+
       setUsers(validUsers);
       setTotalUsers(validUsers.length);
     } catch (error) {
@@ -126,21 +135,23 @@ const AdminPanel = () => {
     }
 
     try {
-      const response = await api.fetch(`/admin/users/${user.email}`, {
-        method: "DELETE"
-      });
+      const response = await api.fetch(`/admin/users/${user.email}`,
+        {
+          method: "DELETE",
+        }
+      );
 
-      if (!response.ok) {
+      if (response.ok) {
+        fetchUsers();
+        setConfirmAction({ type: "", user: null });
+        setIsConfirmModalOpen(false);
+      } else {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Erro ao deletar usuário");
+        alert(errorData.message || "Erro ao deletar usuário");
       }
-
-      fetchUsers();
-      setConfirmAction({ type: "", user: null });
-      setIsConfirmModalOpen(false);
     } catch (error) {
       console.error("Erro ao deletar usuário:", error);
-      alert(error.message || "Erro ao deletar usuário");
+      alert("Erro ao deletar usuário");
     }
   };
 

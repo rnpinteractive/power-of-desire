@@ -44,7 +44,9 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      setError(error.message || "Email not registered. Please contact support.");
+      setError(
+        error.message || "Email not registered. Please contact support."
+      );
     } finally {
       setLoading(false);
     }

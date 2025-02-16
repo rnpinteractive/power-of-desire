@@ -1,0 +1,34 @@
+{
+  "dia": 7,
+  "titulo": "Abertura para o recomeço",
+  "subtitulo": "Inicie uma conversa leve e sincera",
+  "mensagem": {
+    "texto": "Oi, estive pensando em nós e queria saber como você está. Estou disposto a conversar quando você se sentir confortável.",
+    "contexto": "Esta mensagem é um convite para abrir um canal de comunicação, mostrando que você está aberto ao diálogo sem pressionar."
+  },
+  "dicas": [
+    {
+      "titulo": "Seja autêntico",
+      "texto": "Mostre seus verdadeiros sentimentos e pensamentos, evite mensagens genéricas ou forçadas."
+    },
+    {
+      "titulo": "Mantenha a leveza",
+      "texto": "Evite trazer à tona a traição ou discussões pesadas neste primeiro contato; foque em reconectar-se."
+    },
+    {
+      "titulo": "Dê espaço",
+      "texto": "Após enviar a mensagem, aguarde a resposta sem cobrar ou pressionar; isso demonstra respeito pelo tempo dela."
+    }
+  ],
+  "evitar": [
+    {
+      "titulo": "Não mencione a traição inicialmente",
+      "texto": "Falar sobre a traição logo de cara pode afastá-la ainda mais; concentre-se em restabelecer a conexão primeiro."
+    },
+    {
+      "titulo": "Evite desespero",
+      "texto": "Mensagens excessivas ou insistência podem ser vistas como necessidade desesperada, o que pode gerar afastamento."
+    }
+  ],
+  "generatedAt": "2025-02-13T19:50:29.781Z"
+}

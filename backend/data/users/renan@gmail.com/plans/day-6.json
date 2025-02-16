@@ -1,0 +1,34 @@
+{
+  "dia": 6,
+  "titulo": "Reconstruindo a conexão",
+  "subtitulo": "Foque em restabelecer um diálogo positivo e sincero",
+  "mensagem": {
+    "texto": "Oi, estava pensando em como as coisas mudaram rápido entre nós. Eu realmente valorizo o que tivemos e gostaria de conversar sobre isso quando você se sentir à vontade.",
+    "contexto": "Esta mensagem visa abrir um espaço para diálogo sem pressão, mostrando que você ainda valoriza a relação e está disposto a ouvir."
+  },
+  "dicas": [
+    {
+      "titulo": "Mantenha a leveza na conversa",
+      "texto": "Evite trazer à tona questões pesadas ou discussões do passado. Foque em tópicos neutros que possam gerar boas lembranças."
+    },
+    {
+      "titulo": "Seja paciente",
+      "texto": "Dê espaço para que ele(a) responda no tempo dele(a). Não pressione por respostas rápidas ou decisões imediatas."
+    },
+    {
+      "titulo": "Mostre seu crescimento pessoal",
+      "texto": "Compartilhe brevemente algo positivo que aconteceu com você desde a separação, demonstrando que está evoluindo como pessoa."
+    }
+  ],
+  "evitar": [
+    {
+      "titulo": "Não seja insistente",
+      "texto": "Evite enviar várias mensagens seguidas. Isso pode parecer desespero e afastar ainda mais a pessoa."
+    },
+    {
+      "titulo": "Evite discussões sobre traição",
+      "texto": "Relembrar o motivo da separação pode reabrir feridas. Foque em construir um novo diálogo ao invés de revisitar o passado doloroso."
+    }
+  ],
+  "generatedAt": "2025-02-13T19:50:17.280Z"
+}

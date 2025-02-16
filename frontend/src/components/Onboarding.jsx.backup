@@ -124,28 +124,27 @@ const Onboarding = () => {
       setCurrentStep((prev) => prev + 1);
     } else {
       try {
-        const response = await api.fetch("/users/onboarding", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: user.email,
-            ...answers,
-            onboardingCompleted: true,
-          }),
-        });
+        const response = await api.fetch("/users/onboarding",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: user.email,
+              ...answers,
+              onboardingCompleted: true,
+            }),
+          }
+        );
 
-        if (!response.ok) {
-          throw new Error("Failed to save onboarding data");
+        if (response.ok) {
+          navigate("/dashboard", {
+            state: {
+              user: { ...user, onboardingCompleted: true },
+            },
+          });
         }
-
-        const data = await response.json();
-        navigate("/dashboard", {
-          state: {
-            user: { ...data, onboardingCompleted: true },
-          },
-        });
       } catch (error) {
         console.error("Erro ao salvar onboarding:", error);
         alert("Erro ao salvar suas respostas. Por favor, tente novamente.");
