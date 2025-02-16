@@ -169,15 +169,26 @@ const Onboarding = () => {
   const currentQuestion = questions[currentStep];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-purple-50 p-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-xl shadow-lg p-6 md:p-8">
+    <div className="min-h-screen bg-black">
+      {/* Header com Logo */}
+      <header className="p-8">
+        <div className="max-w-2xl mx-auto">
+          <img
+            src="/images/conteudos/logopfd-removebg-preview.png"
+            alt="Power of Desire"
+            className="h-12 mx-auto mb-8"
+          />
+        </div>
+      </header>
+
+      <div className="max-w-2xl mx-auto px-4 pb-8">
+        <div className="bg-[#1c1c1e] rounded-2xl shadow-xl p-6 md:p-8 border border-white/10">
           {/* Header com nome do usuário */}
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-purple-800">
-              Olá, {user.nome}!
+            <h2 className="text-2xl font-light text-white mb-3">
+              Olá, <span className="font-medium">{user.nome}</span>!
             </h2>
-            <p className="text-gray-600 mt-2">
+            <p className="text-white/60">
               Vamos conhecer melhor sua situação para ajudar você.
             </p>
           </div>
@@ -185,16 +196,16 @@ const Onboarding = () => {
           {/* Barra de progresso */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-white/40">
                 Pergunta {currentStep + 1} de {questions.length}
               </span>
-              <span className="text-sm text-purple-600 font-medium">
+              <span className="text-sm text-blue-400 font-medium">
                 {Math.round(((currentStep + 1) / questions.length) * 100)}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-[#2c2c2e] rounded-full h-2">
               <div
-                className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
                 style={{
                   width: `${((currentStep + 1) / questions.length) * 100}%`,
                 }}
@@ -204,13 +215,13 @@ const Onboarding = () => {
 
           {/* Pergunta atual */}
           <div className="mb-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
+            <h3 className="text-xl font-medium text-white mb-6">
               {currentQuestion.question}
             </h3>
 
             {currentQuestion.isText ? (
               <textarea
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full p-4 bg-[#2c2c2e] border border-white/10 rounded-xl text-white placeholder-white/40 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 rows="4"
                 value={answers[currentQuestion.id] || ""}
                 onChange={(e) => handleAnswer(e.target.value)}
@@ -222,11 +233,11 @@ const Onboarding = () => {
                   <button
                     key={index}
                     onClick={() => handleAnswer(option)}
-                    className={`w-full p-4 text-left rounded-lg transition-colors
+                    className={`w-full p-4 text-left rounded-xl transition-all duration-300
                       ${
                         answers[currentQuestion.id] === option
-                          ? "bg-purple-100 border-purple-500 border-2 text-purple-700"
-                          : "bg-gray-50 hover:bg-purple-50 border border-gray-200 text-gray-700"
+                          ? "bg-blue-500/20 border-blue-500 border text-white"
+                          : "bg-[#2c2c2e] hover:bg-[#3c3c3e] border border-white/10 text-white/80 hover:text-white"
                       }`}
                   >
                     {option}
@@ -241,11 +252,11 @@ const Onboarding = () => {
             <button
               onClick={handleBack}
               disabled={currentStep === 0}
-              className={`px-6 py-2 rounded-lg transition-colors
+              className={`px-6 py-3 rounded-xl transition-all duration-300
                 ${
                   currentStep === 0
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-white text-purple-600 border border-purple-600 hover:bg-purple-50"
+                    ? "bg-[#2c2c2e] text-white/40 cursor-not-allowed"
+                    : "bg-[#2c2c2e] text-white/80 hover:text-white border border-white/10 hover:bg-[#3c3c3e]"
                 }`}
             >
               Voltar
@@ -254,11 +265,11 @@ const Onboarding = () => {
             <button
               onClick={handleNext}
               disabled={!answers[currentQuestion.id]}
-              className={`px-6 py-2 rounded-lg
+              className={`px-6 py-3 rounded-xl transition-all duration-300
                 ${
                   !answers[currentQuestion.id]
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-purple-600 text-white hover:bg-purple-700"
+                    ? "bg-[#2c2c2e] text-white/40 cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500"
                 }`}
             >
               {currentStep === questions.length - 1 ? "Concluir" : "Próximo"}
