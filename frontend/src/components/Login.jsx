@@ -12,6 +12,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { setUser } = useContext(UserContext);
 
+  // Login.jsx
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -26,27 +27,31 @@ const Login = () => {
         body: JSON.stringify({ email }),
       });
 
-      const data = await response.json();
-
+      // Importante: NÃO fazer parse do JSON se não for 200/201
       if (!response.ok) {
-        throw new Error(data.error || "Erro ao fazer login");
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao fazer login");
       }
 
-      if (data.user) {
-        localStorage.setItem("user", JSON.stringify(data.user));
-        setUser(data.user);
+      const data = await response.json();
 
-        if (!data.user.onboardingCompleted) {
-          navigate("/onboarding");
-        } else {
-          navigate("/dashboard");
-        }
+      // Só prosseguir se realmente recebeu um usuário válido
+      if (!data.user || !data.user.email) {
+        throw new Error("Dados do usuário inválidos");
+      }
+
+      localStorage.setItem("user", JSON.stringify(data.user));
+      setUser(data.user);
+
+      // Verificar explicitamente se onboarding foi completado
+      if (data.user.onboardingCompleted === false) {
+        navigate("/onboarding");
+      } else {
+        navigate("/dashboard");
       }
     } catch (error) {
       console.error("Login error:", error);
-      setError(
-        error.message || "Email não cadastrado. Entre em contato com o suporte."
-      );
+      setError("Email não cadastrado. Entre em contato com o suporte.");
     } finally {
       setLoading(false);
     }

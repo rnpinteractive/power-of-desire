@@ -1,4 +1,4 @@
-// backend/routes/auth.js
+// auth.js
 const express = require("express");
 const router = express.Router();
 const fs = require("fs").promises;
@@ -8,34 +8,60 @@ router.post("/login", async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
-    return res.status(400).json({ error: "Email is required" });
+    return res.status(400).json({ error: "Email é obrigatório" });
   }
 
   try {
-    // APENAS verifica na estrutura nova - pasta do usuário + profile.json
+    // 1. Verificar se o diretório do usuário existe
     const userDir = path.join(__dirname, "..", "data", "users", email);
+
+    // 2. Verificar se profile.json existe
     const profilePath = path.join(userDir, "profile.json");
 
-    await fs.access(profilePath);
-    const userData = JSON.parse(await fs.readFile(profilePath, "utf8"));
-
-    // Se encontrou o usuário, tenta carregar onboarding
     try {
-      const onboardingPath = path.join(userDir, "onboarding.json");
-      const onboardingData = JSON.parse(
-        await fs.readFile(onboardingPath, "utf8")
-      );
-      Object.assign(userData, onboardingData);
+      // 3. Tentar acessar o arquivo - se não existir, vai lançar erro
+      await fs.access(profilePath);
     } catch (err) {
-      // Ignora se não tiver onboarding
+      // 4. Se o arquivo não existe, retorna 404 imediatamente
+      return res.status(404).json({
+        error: "Usuário não cadastrado. Entre em contato com o suporte.",
+      });
     }
 
-    res.json({ user: userData });
+    // 5. Se chegou aqui, o arquivo existe - ler os dados
+    const profileData = await fs.readFile(profilePath, "utf8");
+    const userData = JSON.parse(profileData);
+
+    // 6. Verificar se os dados são válidos
+    if (!userData || !userData.email) {
+      return res.status(400).json({
+        error: "Dados do usuário inválidos",
+      });
+    }
+
+    // 7. Opcional: Verificar onboarding
+    let onboardingData = {};
+    try {
+      const onboardingPath = path.join(userDir, "onboarding.json");
+      const onboardingContent = await fs.readFile(onboardingPath, "utf8");
+      onboardingData = JSON.parse(onboardingContent);
+    } catch (err) {
+      // Se não tem onboarding, assume que não foi completado
+      onboardingData = { onboardingCompleted: false };
+    }
+
+    // 8. Retornar dados combinados
+    res.json({
+      user: {
+        ...userData,
+        ...onboardingData,
+      },
+    });
   } catch (error) {
-    // Se não encontrou, retorna 404 - NADA é criado
-    res
-      .status(404)
-      .json({ error: "User not registered. Please contact support." });
+    console.error("Erro no login:", error);
+    res.status(500).json({
+      error: "Erro ao verificar usuário. Tente novamente.",
+    });
   }
 });
 
