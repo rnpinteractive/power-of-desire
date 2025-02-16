@@ -12,7 +12,6 @@ const Login = () => {
   const navigate = useNavigate();
   const { setUser } = useContext(UserContext);
 
-  // Login.jsx
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -27,23 +26,20 @@ const Login = () => {
         body: JSON.stringify({ email }),
       });
 
-      // Importante: NÃO fazer parse do JSON se não for 200/201
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Erro ao fazer login");
+        throw new Error(error.error || "Error logging in");
       }
 
       const data = await response.json();
 
-      // Só prosseguir se realmente recebeu um usuário válido
       if (!data.user || !data.user.email) {
-        throw new Error("Dados do usuário inválidos");
+        throw new Error("Invalid user data");
       }
 
       localStorage.setItem("user", JSON.stringify(data.user));
       setUser(data.user);
 
-      // Verificar explicitamente se onboarding foi completado
       if (data.user.onboardingCompleted === false) {
         navigate("/onboarding");
       } else {
@@ -51,7 +47,7 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      setError("Email não cadastrado. Entre em contato com o suporte.");
+      setError("Email not registered. Please contact support.");
     } finally {
       setLoading(false);
     }
@@ -59,12 +55,8 @@ const Login = () => {
 
   return (
     <div className="min-h-screen w-full bg-[#080808] flex flex-col md:flex-row">
-      {/* Left Section - Desktop Only */}
       <div className="hidden md:flex md:w-1/2 relative overflow-hidden">
-        {/* Subtle Gradient Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] via-[#262626] to-[#1f1f1f]" />
-
-        {/* Soft Pattern Overlay */}
         <div className="absolute inset-0 opacity-5">
           <div
             className="absolute inset-0"
@@ -74,8 +66,6 @@ const Login = () => {
             }}
           />
         </div>
-
-        {/* Content */}
         <div className="relative w-full h-full flex flex-col justify-center items-center p-12 text-white">
           <img
             src="/images/conteudos/logopfd-removebg-preview.png"
@@ -93,16 +83,11 @@ const Login = () => {
             </p>
           </div>
         </div>
-
-        {/* Subtle Animated Orbs */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#202020] rounded-full filter blur-[128px] opacity-40 animate-float" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#252525] rounded-full filter blur-[128px] opacity-40 animate-float-delayed" />
       </div>
-
-      {/* Right Section - Login Form */}
       <div className="flex-1 flex flex-col justify-center items-center p-6 md:p-12 bg-[#080808]">
         <div className="w-full max-w-md">
-          {/* Mobile Logo */}
           <div className="md:hidden flex justify-center mb-12">
             <img
               src="/images/conteudos/logopfd-removebg-preview.png"
@@ -110,13 +95,8 @@ const Login = () => {
               className="h-16 filter brightness-110"
             />
           </div>
-
-          {/* Form Container */}
           <div className="relative">
-            {/* Glassmorphism Container */}
             <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent rounded-2xl" />
-
-            {/* Content */}
             <div className="relative p-8 md:p-10">
               <div className="text-center mb-8">
                 <h1 className="text-2xl md:text-3xl font-light text-white mb-3 tracking-wide">
@@ -126,9 +106,7 @@ const Login = () => {
                   Continue your transformation journey
                 </p>
               </div>
-
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Email Input */}
                 <div>
                   <label className="block text-sm font-medium text-[#a0a0a0] mb-2">
                     Your registered email
@@ -169,22 +147,17 @@ const Login = () => {
                     </div>
                   </div>
                 </div>
-
-                {/* Error Message */}
                 {error && (
                   <div className="bg-red-500/5 border border-red-500/10 text-red-400 text-sm rounded-xl p-4 animate-fade-in">
                     {error}
                   </div>
                 )}
-
-                {/* Submit Button */}
                 <button
                   type="submit"
                   disabled={loading}
                   className="relative w-full group"
                 >
-                  <div className="absolute -inset-[1px] bg-gradient-to-r from-[#202020] to-[#252525] rounded-xl opacity-50 group-hover:opacity-100 blur-sm transition-all duration-300" />
-                  <div className="relative w-full py-4 bg-[#151515] rounded-xl flex items-center justify-center group-hover:bg-[#1a1a1a] transition-all duration-300 border border-[#252525] group-hover:border-[#303030]">
+                  <div className="relative w-full py-4 bg-[#151515] rounded-xl flex items-center justify-center">
                     {loading ? (
                       <div className="flex items-center gap-3">
                         <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
@@ -202,8 +175,6 @@ const Login = () => {
               </form>
             </div>
           </div>
-
-          {/* Footer Message */}
           <p className="text-[#505050] text-sm text-center mt-8">
             Sign in with your registered email to access the portal
           </p>
