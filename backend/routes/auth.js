@@ -9,43 +9,44 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ error: "Email is required" });
   }
 
-  const userProfilePath = path.join(
-    __dirname,
-    "..",
-    "data",
-    "users",
-    email,
-    "profile.json"
-  );
+  const userDir = path.join(__dirname, "..", "data", "users", email);
+  const userProfilePath = path.join(userDir, "profile.json");
 
   try {
-    await fs.access(userProfilePath);
-    const userData = await fs.readFile(userProfilePath, "utf8");
-    const user = JSON.parse(userData);
+    // Verifica se o diretório do usuário existe
+    await fs.access(userDir);
 
-    // Carregar dados do onboarding se existirem
+    // Verifica e carrega o profile.json
     try {
-      const onboardingPath = path.join(
-        __dirname,
-        "..",
-        "data",
-        "users",
-        email,
-        "onboarding.json"
-      );
-      const onboardingData = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
-      Object.assign(user, onboardingData);
-    } catch (err) {
-      // Ignora se não tiver dados de onboarding
-    }
+      const profileData = await fs.readFile(userProfilePath, "utf8");
+      const user = JSON.parse(profileData);
 
-    res.json({
-      user,
-      isNew: false,
-    });
+      // Tenta carregar dados do onboarding se existirem
+      try {
+        const onboardingPath = path.join(userDir, "onboarding.json");
+        const onboardingData = JSON.parse(
+          await fs.readFile(onboardingPath, "utf8")
+        );
+        Object.assign(user, onboardingData);
+      } catch (err) {
+        // Ignora se não tiver dados de onboarding
+      }
+
+      res.json({
+        user,
+        isNew: false,
+      });
+    } catch (error) {
+      // Se profile.json não existir ou estiver corrompido
+      res.status(500).json({
+        error: "User profile is corrupted. Please contact support.",
+        isNew: false,
+      });
+    }
   } catch (error) {
+    // Se o diretório do usuário não existir
     res.status(404).json({
-      error: "User not registered. Please contact support.",
+      error: "Email not registered. Please contact support.",
       isNew: true,
     });
   }

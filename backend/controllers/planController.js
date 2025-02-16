@@ -4,6 +4,11 @@ const path = require("path");
 
 const generatePlan = async (userData, day) => {
   try {
+    // Validação dos dados do usuário
+    if (!userData || !userData.email) {
+      throw new Error("User data is required");
+    }
+
     const prompt = `Based on the following user information:
 Objective: ${userData.objective}
 Time Without Contact: ${userData.timeWithoutContact}
@@ -52,6 +57,7 @@ Return ONLY a VALID JSON OBJECT in the EXACT format below:
   ]
 }`;
 
+    // Chamada para a OpenAI
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini-2024-07-18",
       messages: [
@@ -74,6 +80,7 @@ Return ONLY a VALID JSON OBJECT in the EXACT format below:
     const responseContent = completion.choices[0].message.content.trim();
     const planDoDia = JSON.parse(responseContent);
 
+    // Validação da estrutura do plano
     if (
       !planDoDia.day ||
       !planDoDia.title ||
@@ -81,35 +88,42 @@ Return ONLY a VALID JSON OBJECT in the EXACT format below:
       !Array.isArray(planDoDia.tips) ||
       !Array.isArray(planDoDia.avoid)
     ) {
-      throw new Error("The AI response does not contain the expected structure");
+      throw new Error(
+        "The AI response does not contain the expected structure"
+      );
     }
 
-    // Salvar o plano na pasta do usuário
-    const planDir = path.join(
-      __dirname,
-      "../data/users",
-      userData.email,
-      "plans"
-    );
-    
-    await fs.mkdir(planDir, { recursive: true });
-    
-    const planPath = path.join(planDir, `day-${day}.json`);
-    await fs.writeFile(
-      planPath,
-      JSON.stringify({
-        ...planDoDia,
-        generatedAt: new Date().toISOString()
-      }, null, 2)
-    );
+    // Preparar diretório do usuário
+    const userDir = path.join(__dirname, "..", "data", "users", userData.email);
+    const planDir = path.join(userDir, "plans");
 
-    return planDoDia;
+    // Criar diretório de planos se não existir
+    await fs.mkdir(planDir, { recursive: true });
+
+    // Salvar o plano
+    const planPath = path.join(planDir, `day-${day}.json`);
+    const planData = {
+      ...planDoDia,
+      generatedAt: new Date().toISOString(),
+      userEmail: userData.email,
+      dayNumber: day,
+    };
+
+    await fs.writeFile(planPath, JSON.stringify(planData, null, 2));
+
+    return planData;
   } catch (error) {
     console.error("Error generating plan:", error);
+
     if (error instanceof SyntaxError) {
       throw new Error("Error processing AI response: Invalid JSON");
     }
-    throw error;
+    if (error.message.includes("User data is required")) {
+      throw new Error("Invalid user data provided");
+    }
+
+    // Adiciona contexto ao erro
+    throw new Error(`Failed to generate plan for day ${day}: ${error.message}`);
   }
 };
 

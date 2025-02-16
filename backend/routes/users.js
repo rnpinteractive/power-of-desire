@@ -29,6 +29,45 @@ router.post("/onboarding", async (req, res) => {
   }
 });
 
+// Rota de reembolso
+router.post("/refund", async (req, res) => {
+  const { email, reason, requestDate } = req.body;
+  const userDir = path.join(__dirname, "..", "data", "users", email);
+  const refundPath = path.join(userDir, "refund.json");
+
+  try {
+    // Verifica se já existe arquivo de reembolso
+    try {
+      await fs.access(refundPath);
+      return res.status(400).json({
+        message: "Você já possui uma solicitação de reembolso em andamento.",
+      });
+    } catch (err) {
+      // Se não existe, continua normalmente
+    }
+
+    // Cria nova solicitação
+    const refundData = {
+      email,
+      reason,
+      requestDate,
+      status: "pending",
+    };
+
+    await fs.writeFile(refundPath, JSON.stringify(refundData, null, 2));
+    return res.status(200).json({
+      success: true,
+      message: "Solicitação de reembolso enviada com sucesso",
+    });
+  } catch (error) {
+    console.error("Erro no reembolso:", error);
+    return res.status(500).json({
+      message: "Erro interno ao processar solicitação",
+    });
+  }
+});
+
+// Verifica status do reembolso
 router.get("/refund/:email", async (req, res) => {
   try {
     const refundPath = path.join(
@@ -48,20 +87,41 @@ router.get("/refund/:email", async (req, res) => {
   }
 });
 
-router.get("/:email/plan/:dia", async (req, res) => {
+// Busca dados do usuário
+router.get("/:email", async (req, res) => {
   try {
-    const { email, dia } = req.params;
-    const { regenerate } = req.query;
-
-    const planPath = path.join(
+    const userDir = path.join(
       __dirname,
       "..",
       "data",
       "users",
-      email,
-      "plans",
-      `day-${dia}.json`
+      req.params.email
     );
+    const profilePath = path.join(userDir, "profile.json");
+    const onboardingPath = path.join(userDir, "onboarding.json");
+
+    // Carrega perfil
+    const profile = JSON.parse(await fs.readFile(profilePath, "utf8"));
+
+    // Tenta carregar onboarding se existir
+    try {
+      const onboarding = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
+      res.json({ ...profile, ...onboarding });
+    } catch (err) {
+      res.json(profile);
+    }
+  } catch (error) {
+    res.status(404).json({ error: "Usuário não encontrado" });
+  }
+});
+
+// Busca/gera plano do dia
+router.get("/:email/plan/:dia", async (req, res) => {
+  try {
+    const { email, dia } = req.params;
+    const { regenerate } = req.query;
+    const userDir = path.join(__dirname, "..", "data", "users", email);
+    const planPath = path.join(userDir, "plans", `day-${dia}.json`);
 
     // Se não é para regenerar e já existe plano, retorna o existente
     if (!regenerate) {
@@ -74,22 +134,8 @@ router.get("/:email/plan/:dia", async (req, res) => {
     }
 
     // Carrega dados do usuário para gerar novo plano
-    const profilePath = path.join(
-      __dirname,
-      "..",
-      "data",
-      "users",
-      email,
-      "profile.json"
-    );
-    const onboardingPath = path.join(
-      __dirname,
-      "..",
-      "data",
-      "users",
-      email,
-      "onboarding.json"
-    );
+    const profilePath = path.join(userDir, "profile.json");
+    const onboardingPath = path.join(userDir, "onboarding.json");
 
     const profile = JSON.parse(await fs.readFile(profilePath, "utf8"));
     const onboarding = JSON.parse(await fs.readFile(onboardingPath, "utf8"));

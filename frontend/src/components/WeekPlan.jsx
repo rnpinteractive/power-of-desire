@@ -1,4 +1,4 @@
-import { api } from '../services/api';
+import { api } from "../services/api";
 import React, { useState, useEffect, useContext } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { UserContext } from "../App";
@@ -170,7 +170,10 @@ const WeekPlan = () => {
     setError(null);
 
     try {
-      const url = `/users/${user.email}/plan/${dia}${forceRegenerate ? '?regenerate=true' : ''}`;
+      // Usa a nova estrutura de pastas
+      const url = `/users/${user.email}/plan/${dia}${
+        forceRegenerate ? "?regenerate=true" : ""
+      }`;
       const response = await api.fetch(url);
 
       if (!response.ok) {
@@ -178,8 +181,7 @@ const WeekPlan = () => {
       }
 
       const data = await response.json();
-      const normalizedPlan = normalizePlan(data);
-      setPlanDoDia(normalizedPlan);
+      setPlanDoDia(normalizePlan(data));
     } catch (error) {
       console.error("Error:", error);
       setError("Unable to load your plan. Please try again.");
