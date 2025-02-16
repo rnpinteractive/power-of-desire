@@ -3,7 +3,7 @@ const router = express.Router();
 const fs = require("fs").promises;
 const path = require("path");
 
-// Listar todos usuários
+// Listar todos os usuários
 router.get("/users", async (req, res) => {
   try {
     const usersDir = path.join(__dirname, "..", "data", "users");
@@ -11,7 +11,7 @@ router.get("/users", async (req, res) => {
 
     const users = await Promise.all(
       userDirs
-        .filter((dir) => !dir.endsWith(".json")) // Ignora arquivos .json soltos
+        .filter((dir) => !dir.endsWith(".json"))
         .map(async (userDir) => {
           try {
             const profilePath = path.join(usersDir, userDir, "profile.json");
@@ -35,9 +35,8 @@ router.get("/users", async (req, res) => {
             return null;
           }
         })
-    ).then((users) => users.filter(Boolean));
-
-    res.json(users);
+    );
+    res.json(users.filter(Boolean));
   } catch (error) {
     res.status(500).json({ error: "Erro ao listar usuários" });
   }
@@ -47,26 +46,24 @@ router.get("/users", async (req, res) => {
 router.post("/users", async (req, res) => {
   try {
     const { nome, email, telefone } = req.body;
-
     if (!nome || !email) {
       return res.status(400).json({ error: "Nome e email são obrigatórios" });
     }
 
     const userDir = path.join(__dirname, "..", "data", "users", email);
 
-    // Verifica se usuário já existe
+    // Verifica se o usuário já existe
     try {
       await fs.access(userDir);
       return res.status(400).json({ error: "Usuário já existe" });
     } catch {
-      // Continua se o usuário não existir
+      // Se não existir, continua
     }
 
-    // Criar estrutura de diretórios
+    // Cria a estrutura de diretórios
     await fs.mkdir(userDir, { recursive: true });
     await fs.mkdir(path.join(userDir, "plans"), { recursive: true });
 
-    // Dados do perfil
     const userData = {
       nome,
       email,
@@ -75,7 +72,7 @@ router.post("/users", async (req, res) => {
       onboardingCompleted: false,
     };
 
-    // Salvar profile.json
+    // Salva o profile.json
     await fs.writeFile(
       path.join(userDir, "profile.json"),
       JSON.stringify(userData, null, 2)
@@ -94,7 +91,6 @@ router.delete("/users/:email", async (req, res) => {
     const { email } = req.params;
     const userDir = path.join(__dirname, "..", "data", "users", email);
 
-    // Verifica se o diretório existe
     try {
       await fs.access(userDir);
       await fs.rm(userDir, { recursive: true, force: true });

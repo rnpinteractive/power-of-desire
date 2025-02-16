@@ -39,20 +39,6 @@ const createDirectories = async () => {
 createDirectories();
 
 // Rotas
-app.post("/api/auth/login", async (req, res) => {
-  const { email } = req.body;
-  const userPath = path.join(__dirname, "data", "users", `${email}.json`);
-
-  try {
-    await fs.access(userPath);
-    const userData = JSON.parse(await fs.readFile(userPath, "utf8"));
-    res.json({ user: userData, isNew: false });
-  } catch {
-    const newUser = { email, createdAt: new Date().toISOString() };
-    await fs.writeFile(userPath, JSON.stringify(newUser));
-    res.json({ user: newUser, isNew: true });
-  }
-});
 
 app.post("/api/onboarding", async (req, res) => {
   const { email, ...data } = req.body;

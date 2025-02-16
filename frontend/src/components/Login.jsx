@@ -29,7 +29,7 @@ const Login = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Login failed");
+        throw new Error(data.error || "Erro ao fazer login");
       }
 
       if (data.user) {
@@ -44,7 +44,9 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      setError(error.message || "Email not registered. Please contact support.");
+      setError(
+        error.message || "Email não cadastrado. Entre em contato com o suporte."
+      );
     } finally {
       setLoading(false);
     }
