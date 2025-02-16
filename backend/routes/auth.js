@@ -9,45 +9,46 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ error: "Email is required" });
   }
 
+  // Verifica a PASTA do usuário, não o arquivo .json
   const userDir = path.join(__dirname, "..", "data", "users", email);
-  const userProfilePath = path.join(userDir, "profile.json");
+  const profilePath = path.join(userDir, "profile.json");
 
   try {
-    // Verifica se o diretório do usuário existe
+    // Primeiro verifica se a pasta existe
     await fs.access(userDir);
 
-    // Verifica e carrega o profile.json
+    // Depois verifica se tem o profile.json
     try {
-      const profileData = await fs.readFile(userProfilePath, "utf8");
-      const user = JSON.parse(profileData);
+      const profileData = await fs.readFile(profilePath, "utf8");
+      const userData = JSON.parse(profileData);
 
-      // Tenta carregar dados do onboarding se existirem
+      // Tenta carregar onboarding se existir
       try {
         const onboardingPath = path.join(userDir, "onboarding.json");
         const onboardingData = JSON.parse(
           await fs.readFile(onboardingPath, "utf8")
         );
-        Object.assign(user, onboardingData);
+        Object.assign(userData, onboardingData);
       } catch (err) {
-        // Ignora se não tiver dados de onboarding
+        // Ignora se não tiver onboarding
       }
 
       res.json({
-        user,
+        user: userData,
         isNew: false,
       });
     } catch (error) {
-      // Se profile.json não existir ou estiver corrompido
+      // Se não conseguir ler o profile.json
       res.status(500).json({
-        error: "User profile is corrupted. Please contact support.",
+        error: "User profile is corrupted.",
         isNew: false,
       });
     }
   } catch (error) {
-    // Se o diretório do usuário não existir
+    // Se a pasta não existir
     res.status(404).json({
-      error: "Email not registered. Please contact support.",
-      isNew: true,
+      error: "Email not registered.",
+      isNew: false,
     });
   }
 });
