@@ -30,89 +30,83 @@ const Onboarding = () => {
     {
       id: "objective",
       question:
-        "Você deseja recuperar um ex ou fortalecer seu relacionamento atual?",
-      options: ["Recuperar ex", "Fortalecer relacionamento atual"],
+        "Do you want to get back with your ex or strengthen your current relationship?",
+      options: ["Get back with ex", "Strengthen current relationship"],
     },
     {
       id: "timeWithoutContact",
-      question: "Há quanto tempo vocês não conversam direito?",
+      question: "How long have you been without proper communication?",
       options: [
-        "Menos de 1 semana",
-        "1-2 semanas",
-        "2-4 semanas",
-        "Mais de 1 mês",
-        "Mais de 6 meses",
+        "Less than 1 week",
+        "1-2 weeks",
+        "2-4 weeks",
+        "More than 1 month",
+        "More than 6 months",
       ],
     },
     {
       id: "separationCause",
-      question: "O que causou a separação ou o problema principal entre vocês?",
+      question: "What caused the separation or main issue between you?",
       options: [
-        "Brigas frequentes",
-        "Distanciamento",
-        "Traição",
-        "Problemas de comunicação",
-        "Ciúmes",
-        "Outro",
+        "Frequent arguments",
+        "Growing apart",
+        "Infidelity",
+        "Communication issues",
+        "Jealousy",
+        "Other",
       ],
     },
     {
       id: "messagesReaction",
       question:
-        "Como ele costumava reagir às suas mensagens antes de tudo mudar?",
+        "How did they react to your messages before everything changed?",
       options: [
-        "Respondia rapidamente e com entusiasmo",
-        "Demorava mas respondia com carinho",
-        "Respostas curtas mas educadas",
-        "Respostas frias ou distantes",
+        "Quick and enthusiastic responses",
+        "Delayed but caring responses",
+        "Short but polite responses",
+        "Cold or distant responses",
       ],
     },
     {
       id: "lastMessage",
-      question: "Qual foi a última coisa que ele disse pra você?",
+      question: "What was the last thing they said to you?",
       isText: true,
-      placeholder: "Digite a última mensagem que recebeu...",
+      placeholder: "Type the last message you received...",
     },
     {
       id: "currentInterest",
-      question: "Você sente que ele ainda tem algum interesse?",
-      options: [
-        "Sim, definitivamente",
-        "Talvez",
-        "Não tenho certeza",
-        "Parece que não",
-      ],
+      question: "Do you feel they still have any interest?",
+      options: ["Yes, definitely", "Maybe", "Not sure", "Doesn't seem like it"],
     },
     {
       id: "currentStatus",
-      question: "Ele está com outra pessoa no momento?",
-      options: ["Sim", "Não", "Não sei"],
+      question: "Are they with someone else right now?",
+      options: ["Yes", "No", "Don't know"],
     },
     {
       id: "routine",
-      question: "Como era a rotina de vocês juntos?",
+      question: "What was your routine together like?",
       options: [
-        "Morávamos juntos",
-        "Nos víamos todos os dias",
-        "Nos víamos alguns dias da semana",
-        "Encontros ocasionais",
+        "Living together",
+        "Seeing each other daily",
+        "Meeting a few times a week",
+        "Occasional meetings",
       ],
     },
     {
       id: "recentAttempts",
-      question:
-        "Você já tentou mandar alguma mensagem recentemente? Como foi a resposta?",
+      question: "Have you tried to reach out recently? How did it go?",
       isText: true,
-      placeholder: "Descreva suas tentativas recentes de contato...",
+      placeholder: "Describe your recent contact attempts...",
     },
     {
       id: "desiredOutcome",
-      question: "O que você gostaria que acontecesse agora?",
+      question: "What would you like to happen now?",
       options: [
-        "Reconciliação total",
-        "Reacender o interesse",
-        "Apenas conversar",
-        "Esquecer e seguir em frente",
+        "Complete reconciliation",
+        "Rekindle interest",
+        "Just talk again",
+        "Move on",
       ],
     },
   ];
@@ -170,7 +164,7 @@ const Onboarding = () => {
 
   return (
     <div className="min-h-screen bg-black">
-      {/* Header com Logo */}
+      {/* Header with Logo */}
       <header className="p-8">
         <div className="max-w-2xl mx-auto">
           <img
@@ -183,21 +177,21 @@ const Onboarding = () => {
 
       <div className="max-w-2xl mx-auto px-4 pb-8">
         <div className="bg-[#1c1c1e] rounded-2xl shadow-xl p-6 md:p-8 border border-white/10">
-          {/* Header com nome do usuário */}
+          {/* Header with user's name */}
           <div className="text-center mb-8">
             <h2 className="text-2xl font-light text-white mb-3">
-              Olá, <span className="font-medium">{user.nome}</span>!
+              Hello, <span className="font-medium">{user.nome}</span>!
             </h2>
             <p className="text-white/60">
-              Vamos conhecer melhor sua situação para ajudar você.
+              Let's understand your situation better to help you.
             </p>
           </div>
 
-          {/* Barra de progresso */}
+          {/* Progress bar */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm text-white/40">
-                Pergunta {currentStep + 1} de {questions.length}
+                Question {currentStep + 1} of {questions.length}
               </span>
               <span className="text-sm text-blue-400 font-medium">
                 {Math.round(((currentStep + 1) / questions.length) * 100)}%
@@ -213,7 +207,7 @@ const Onboarding = () => {
             </div>
           </div>
 
-          {/* Pergunta atual */}
+          {/* Current Question */}
           <div className="mb-8">
             <h3 className="text-xl font-medium text-white mb-6">
               {currentQuestion.question}
@@ -247,7 +241,7 @@ const Onboarding = () => {
             )}
           </div>
 
-          {/* Botões de navegação */}
+          {/* Navigation buttons */}
           <div className="flex justify-between">
             <button
               onClick={handleBack}
@@ -259,7 +253,7 @@ const Onboarding = () => {
                     : "bg-[#2c2c2e] text-white/80 hover:text-white border border-white/10 hover:bg-[#3c3c3e]"
                 }`}
             >
-              Voltar
+              Back
             </button>
 
             <button
@@ -272,7 +266,7 @@ const Onboarding = () => {
                     : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500"
                 }`}
             >
-              {currentStep === questions.length - 1 ? "Concluir" : "Próximo"}
+              {currentStep === questions.length - 1 ? "Complete" : "Next"}
             </button>
           </div>
         </div>
