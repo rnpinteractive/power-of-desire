@@ -6,7 +6,7 @@ const path = require("path");
 router.post("/login", async (req, res) => {
   const { email } = req.body;
   if (!email) {
-    return res.status(400).json({ error: "Email é obrigatório" });
+    return res.status(400).json({ error: "Email is required" });
   }
 
   const userFilePath = path.join(
@@ -18,8 +18,9 @@ router.post("/login", async (req, res) => {
   );
 
   try {
+    // Verifica se o arquivo existe
     await fs.access(userFilePath);
-    // Usuário existe
+    // Se existe, retorna os dados do usuário
     const userData = await fs.readFile(userFilePath, "utf8");
     const user = JSON.parse(userData);
     res.json({
@@ -27,16 +28,9 @@ router.post("/login", async (req, res) => {
       isNew: false,
     });
   } catch (error) {
-    // Novo usuário
-    const newUser = {
-      email,
-      createdAt: new Date().toISOString(),
-      onboardingCompleted: false,
-    };
-
-    await fs.writeFile(userFilePath, JSON.stringify(newUser, null, 2));
-    res.json({
-      user: newUser,
+    // Se o arquivo não existe, retorna erro
+    res.status(404).json({
+      error: "User not found. Please contact support to register.",
       isNew: true,
     });
   }

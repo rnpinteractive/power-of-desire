@@ -1,4 +1,4 @@
-import { api } from '../services/api';
+import { api } from "../services/api";
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../App";
@@ -29,7 +29,7 @@ const Login = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Login failed");
+        throw new Error(data.error || "Login failed");
       }
 
       if (data.user) {
@@ -44,7 +44,9 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      setError(error.message || "An error occurred during login");
+      setError(
+        error.message || "Email not registered. Please contact support."
+      );
     } finally {
       setLoading(false);
     }
