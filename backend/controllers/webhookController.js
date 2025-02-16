@@ -3,7 +3,7 @@ const path = require("path");
 const crypto = require("crypto");
 
 // Token Hotmart direto no código
-const HOTMART_WEBHOOK_SECRET = "YOUR-HOTMART-SECRET-HERE";
+const HOTMART_WEBHOOK_SECRET = "jxw4V0smfdPwstXOrdNxkzAkwcyhOA2167811";
 
 const verifySignature = (rawBody, signature) => {
   if (!signature) return false;
