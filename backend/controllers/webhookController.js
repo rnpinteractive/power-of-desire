@@ -8,7 +8,6 @@ const verifySignature = (rawBody, hottok) => {
   return true; // Para testes
 };
 
-// Função auxiliar para mover usuário
 const moveUserDirectory = async (originalEmail, prefix) => {
   const newEmail = `${prefix}-${originalEmail}`;
   const originalDir = path.join(
@@ -54,6 +53,7 @@ const processWebhook = async (req, res) => {
     }
 
     const { event, data } = req.body;
+    console.log("Evento recebido:", event); // Log para debug
 
     switch (event.toUpperCase()) {
       case "PURCHASE_APPROVED": {
@@ -82,14 +82,18 @@ const processWebhook = async (req, res) => {
       }
 
       case "REFUND":
-      case "PURCHASE_PROTEST": // Adicionado tratamento para protest
+      case "PURCHASE_PROTEST":
+      case "PURCHASE_CHARGEBACK": // Corrigido para PURCHASE_CHARGEBACK
       case "CHARGEBACK": {
+        // Mantido CHARGEBACK por segurança
         const originalEmail = data.buyer.email;
 
         // Define o prefixo baseado no evento
         let prefix = "refund";
-        if (event.toUpperCase() === "CHARGEBACK") prefix = "chargeback";
-        if (event.toUpperCase() === "PURCHASE_PROTEST") prefix = "refund"; // Protest trata como refund
+        if (event.toUpperCase().includes("CHARGEBACK")) prefix = "chargeback";
+        if (event.toUpperCase() === "PURCHASE_PROTEST") prefix = "refund";
+
+        console.log(`Processando ${event} com prefixo ${prefix}`); // Log para debug
 
         const success = await moveUserDirectory(originalEmail, prefix);
         if (!success) {
@@ -100,7 +104,9 @@ const processWebhook = async (req, res) => {
 
       default:
         console.log("Evento não reconhecido:", event);
-        return res.status(200).json({ message: "Evento não processado" });
+        return res
+          .status(200)
+          .json({ message: "Webhook processado com sucesso" });
     }
 
     return res.status(200).json({ message: "Webhook processado com sucesso" });
