@@ -9,52 +9,57 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ error: "Email is required" });
   }
 
-  // Define o caminho da pasta do usuário e do profile.json
+  // Define os caminhos para a pasta do usuário e para o profile.json
   const userDir = path.join(__dirname, "..", "data", "users", email);
   const profilePath = path.join(userDir, "profile.json");
 
+  // VERIFICA se a pasta do usuário existe e se é realmente um diretório
   try {
-    // Verifica se o caminho existe e se é um diretório
-    const stats = await fs.stat(userDir);
-    if (!stats.isDirectory()) {
-      return res
-        .status(404)
-        .json({ error: "Email not registered.", isNew: false });
+    const userDirStats = await fs.stat(userDir);
+    if (!userDirStats.isDirectory()) {
+      // Se existir algo com esse nome, mas não for diretório, trata como não encontrado
+      return res.status(404).json({ error: "Email not registered." });
     }
-
-    // Tenta ler o profile.json do usuário
-    try {
-      const profileData = await fs.readFile(profilePath, "utf8");
-      const userData = JSON.parse(profileData);
-
-      // Tenta carregar o onboarding, se existir
-      try {
-        const onboardingPath = path.join(userDir, "onboarding.json");
-        const onboardingData = JSON.parse(
-          await fs.readFile(onboardingPath, "utf8")
-        );
-        Object.assign(userData, onboardingData);
-      } catch (err) {
-        // Se não houver onboarding, ignora o erro
-      }
-
-      return res.json({
-        user: userData,
-        isNew: false,
-      });
-    } catch (error) {
-      return res.status(500).json({
-        error: "User profile is corrupted.",
-        isNew: false,
-      });
-    }
-  } catch (error) {
-    // Se o diretório não existir ou não for um diretório válido
-    return res.status(404).json({
-      error: "Email not registered.",
-      isNew: false,
-    });
+  } catch (err) {
+    // Se a pasta não existir, retorna 404 sem criar nenhum arquivo
+    return res.status(404).json({ error: "Email not registered." });
   }
+
+  // VERIFICA se o arquivo profile.json existe e se é realmente um arquivo
+  try {
+    const profileStats = await fs.stat(profilePath);
+    if (!profileStats.isFile()) {
+      return res.status(500).json({ error: "User profile is corrupted." });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: "User profile is corrupted." });
+  }
+
+  // Lê o profile.json
+  let userData;
+  try {
+    const profileData = await fs.readFile(profilePath, "utf8");
+    userData = JSON.parse(profileData);
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to read user profile." });
+  }
+
+  // Tenta ler o onboarding.json (opcional)
+  try {
+    const onboardingPath = path.join(userDir, "onboarding.json");
+    const onboardingStats = await fs.stat(onboardingPath);
+    if (onboardingStats.isFile()) {
+      const onboardingData = JSON.parse(
+        await fs.readFile(onboardingPath, "utf8")
+      );
+      userData = { ...userData, ...onboardingData };
+    }
+  } catch (err) {
+    // Se não existir o onboarding.json, ignora
+  }
+
+  // Retorna os dados do usuário sem criar arquivos desnecessários
+  return res.json({ user: userData });
 });
 
 module.exports = router;

@@ -1,11 +1,16 @@
 import { api } from "../services/api";
-import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useState, useContext } from "react";
+import { useNavigate, Navigate } from "react-router-dom";
+import { UserContext } from "../App";
 
 const Onboarding = () => {
-  const location = useLocation();
+  const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
-  const user = location.state?.user;
+
+  // Se o usuário não estiver logado, redireciona para o login
+  if (!user) {
+    return <Navigate to="/" />;
+  }
 
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState({
@@ -141,11 +146,13 @@ const Onboarding = () => {
         }
 
         const data = await response.json();
-        navigate("/dashboard", {
-          state: {
-            user: { ...data, onboardingCompleted: true },
-          },
-        });
+
+        // Atualiza o usuário no contexto e no localStorage
+        const updatedUser = { ...user, onboardingCompleted: true };
+        setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+
+        navigate("/dashboard");
       } catch (error) {
         console.error("Erro ao salvar onboarding:", error);
         alert("Erro ao salvar suas respostas. Por favor, tente novamente.");
@@ -160,10 +167,6 @@ const Onboarding = () => {
   };
 
   const currentQuestion = questions[currentStep];
-
-  if (!user) {
-    return <Navigate to="/" />;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-purple-50 p-4">
