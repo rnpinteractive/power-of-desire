@@ -1,4 +1,4 @@
-import { api } from '../services/api';
+import { api } from "../services/api";
 import React, { useState } from "react";
 
 const RefundModal = ({ isOpen, onClose, userEmail }) => {
@@ -14,7 +14,7 @@ const RefundModal = ({ isOpen, onClose, userEmail }) => {
       const checkData = await checkResponse.json();
 
       if (checkData.exists !== false) {
-        alert("Você já possui uma solicitação de reembolso em andamento.");
+        alert("You already have a refund request in progress.");
         onClose();
         window.location.reload();
         return;
@@ -36,11 +36,11 @@ const RefundModal = ({ isOpen, onClose, userEmail }) => {
         throw new Error("Failed to create refund request");
       }
 
-      alert("Solicitação de reembolso enviada com sucesso!");
+      alert("Refund request successfully submitted!");
       onClose();
       window.location.reload();
     } catch (error) {
-      alert("Erro ao processar solicitação");
+      alert("Error processing refund request");
     } finally {
       setLoading(false);
     }
@@ -57,47 +57,47 @@ const RefundModal = ({ isOpen, onClose, userEmail }) => {
         {confirmStep === 1 ? (
           <>
             <h3 className="text-xl font-semibold text-white mb-4">
-              Solicitar Reembolso
+              Request Refund
             </h3>
             <p className="text-white/70 mb-6">
-              Por favor, nos conte o motivo da solicitação:
+              Please let us know the reason for your request:
             </p>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               className="w-full bg-[#2c2c2e] text-white border-none rounded-xl p-4 mb-6 min-h-[120px]"
-              placeholder="Descreva o motivo do reembolso..."
+              placeholder="Describe the reason for the refund..."
             />
             <div className="flex justify-end gap-3">
               <button
                 onClick={onClose}
                 className="px-4 py-2 text-white/70 hover:text-white"
               >
-                Cancelar
+                Cancel
               </button>
               <button
                 onClick={() => setConfirmStep(2)}
                 disabled={!reason.trim()}
                 className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
               >
-                Continuar
+                Continue
               </button>
             </div>
           </>
         ) : (
           <>
             <h3 className="text-xl font-semibold text-white mb-4">
-              Confirmar Reembolso
+              Confirm Refund
             </h3>
             <p className="text-white/70 mb-6">
-              Tem certeza que deseja solicitar o reembolso?
+              Are you sure you want to request a refund?
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setConfirmStep(1)}
                 className="px-4 py-2 text-white/70 hover:text-white"
               >
-                Voltar
+                Back
               </button>
               <button
                 onClick={handleRefundRequest}
@@ -107,10 +107,10 @@ const RefundModal = ({ isOpen, onClose, userEmail }) => {
                 {loading ? (
                   <>
                     <span className="animate-spin">⟳</span>
-                    <span>Processando...</span>
+                    <span>Processing...</span>
                   </>
                 ) : (
-                  "Confirmar Reembolso"
+                  "Confirm Refund"
                 )}
               </button>
             </div>

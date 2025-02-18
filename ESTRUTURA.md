@@ -1,3 +1,8 @@
+ssh root@167.88.38.146
+CGWnnRRnn01102006@@
+
+cd /var/www/
+
 projeto-desire/
 ├── frontend/
 │ ├── src/
