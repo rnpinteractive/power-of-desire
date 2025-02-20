@@ -7,7 +7,6 @@ const path = require("path");
 // Middleware para verificar acesso
 const checkOracleAccess = async (req, res, next) => {
   try {
-    // Pega email do body ou params
     const email = req.body.email || req.params.email;
     if (!email) {
       return res.status(400).json({ error: "Email is required" });
@@ -21,27 +20,33 @@ const checkOracleAccess = async (req, res, next) => {
       email,
       "profile.json"
     );
-    const userData = JSON.parse(await fs.readFile(userProfilePath, "utf8"));
 
-    if (!userData.oraclePrime?.isActive) {
-      return res
-        .status(403)
-        .json({ error: "No access to Oracle Prime", upgrade: true });
+    try {
+      const userData = JSON.parse(await fs.readFile(userProfilePath, "utf8"));
+      if (!userData.oraclePrime?.isActive) {
+        return res.status(403).json({
+          error: "No access to Oracle Prime",
+          upgrade: true,
+        });
+      }
+      req.user = userData;
+      next();
+    } catch (error) {
+      console.error("Error reading user profile:", error);
+      return res.status(404).json({ error: "User profile not found" });
     }
-
-    req.user = userData;
-    next();
   } catch (error) {
-    res.status(500).json({ error: "Error checking access" });
+    console.error("Access check error:", error);
+    return res.status(500).json({ error: "Error checking access" });
   }
 };
 
 // Rota de análise
 router.post("/analyze", checkOracleAccess, async (req, res) => {
   try {
-    const { message, image, email, previousMessages } = req.body;
+    const { message, image, email } = req.body;
 
-    // Load onboarding data
+    // Carregar dados do onboarding
     const onboardingPath = path.join(
       __dirname,
       "..",
@@ -52,7 +57,6 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
     );
     const userData = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
 
-    // Create context-aware prompt
     let prompt = `Based on the following user information:
   Objective: ${userData.objective}
   Time Without Contact: ${userData.timeWithoutContact}
@@ -60,23 +64,16 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
   Current Interest: ${userData.currentInterest}
   Current Status: ${userData.currentStatus}
   
-  Previous context:
-  ${
-    previousMessages
-      ?.map((msg) => `${msg.isUser ? "User" : "Assistant"}: ${msg.content}`)
-      .join("\n") || "No previous context"
-  }
-  
   ${
     image
       ? "Analyze the provided image, focusing on emotional signals, body language, and relationship dynamics. Then, "
       : ""
   }
-  Analyze the current situation and provide guidance based on the user's message and previous context.
-  ${message ? `Current message: "${message}"` : ""}
+  provide deep psychological insights and strategic guidance. Focus on dark psychology principles, emotional triggers, and specific tactical actions.
+  ${message ? `Consider this context: "${message}"` : ""}
   
   Your response must include:
-  1. A clear analysis considering all previous context
+  1. A clear analysis of the current situation
   2. Specific psychological triggers to employ
   3. Strategic actions to take
   4. Potential risks to avoid
@@ -105,7 +102,7 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
         {
           role: "system",
           content:
-            "You are a relationship expert who provides responses EXCLUSIVELY in a valid JSON format. Consider all previous context when providing advice.",
+            "You are a relationship expert who provides responses EXCLUSIVELY in a valid JSON format.",
         },
         {
           role: "user",
@@ -124,7 +121,7 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
     const response = JSON.parse(completion.choices[0].message.content);
     const timestamp = new Date().toISOString();
 
-    // Save complete interaction to history
+    // Salvar no histórico
     const chatDir = path.join(
       __dirname,
       "..",
@@ -187,33 +184,17 @@ router.get("/history/:email", checkOracleAccess, async (req, res) => {
       })
     );
 
-    // Sort by timestamp in ascending order (oldest to newest)
+    // Sort chats by timestamp (ascending order - oldest to newest)
     const sortedChats = chats.sort(
       (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
     );
 
-    // Transform to frontend message format
-    const messages = sortedChats.flatMap((chat) => [
-      {
-        content: chat.userMessage.content,
-        isUser: true,
-        timestamp: chat.userMessage.timestamp,
-        hasImage: chat.userMessage.hasImage,
-      },
-      {
-        content: `Analysis:\n${
-          chat.aiResponse.content.analysis
-        }\n\nStrategic Approach:\n${
-          chat.aiResponse.content.strategy
-        }\n\nKey Triggers:\n${chat.aiResponse.content.triggers
-          .map((t) => `• ${t.type}: ${t.description}`)
-          .join("\n")}\n\n⚠️ Warnings:\n${chat.aiResponse.content.warnings
-          .map((w) => `• ${w.risk}: ${w.impact}`)
-          .join("\n")}`,
-        isUser: false,
-        timestamp: chat.aiResponse.timestamp,
-      },
-    ]);
+    const messages = sortedChats.map((chat) => ({
+      timestamp: chat.timestamp,
+      message: chat.userMessage.content,
+      hasImage: chat.userMessage.hasImage,
+      response: chat.aiResponse.content,
+    }));
 
     res.json(messages);
   } catch (error) {
