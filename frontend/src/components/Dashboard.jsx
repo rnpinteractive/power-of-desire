@@ -1,4 +1,4 @@
-import { api } from '../services/api';
+import { api } from "../services/api";
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -12,9 +12,11 @@ import {
   Flame,
   LogOut,
   AlertCircle,
+  Brain,
 } from "lucide-react";
 import { UserContext } from "../App";
 import RefundModal from "./RefundModal";
+import OraclePrime from "./OraclePrime/OraclePrime";
 
 import "swiper/css";
 import "swiper/css/effect-cards";
@@ -27,6 +29,7 @@ const Dashboard = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [refundModalOpen, setRefundModalOpen] = useState(false);
   const [hasRefund, setHasRefund] = useState(false);
+  const [isOraclePrimeOpen, setIsOraclePrimeOpen] = useState(false);
   const navigate = useNavigate();
 
   // Função de Logout atualizada
@@ -38,16 +41,16 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchArticles = async () => {
-    try {
-      const response = await api.fetch("/articles/search");
-      const data = await response.json();
-      setArticles(data);
-    } catch (error) {
-      console.error("Error fetching articles:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        const response = await api.fetch("/articles/search");
+        const data = await response.json();
+        setArticles(data);
+      } catch (error) {
+        console.error("Error fetching articles:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     fetchArticles();
   }, []);
@@ -56,8 +59,7 @@ const Dashboard = () => {
     const checkRefund = async () => {
       if (user?.email) {
         try {
-          const response = await api.fetch(`/users/refund/${user.email}`
-          );
+          const response = await api.fetch(`/users/refund/${user.email}`);
           const data = await response.json();
           setHasRefund(!!data.email);
         } catch (error) {
@@ -111,14 +113,16 @@ const Dashboard = () => {
         }`}
       >
         <div
-          className={`absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-300 
-            ${menuOpen ? "opacity-100" : "opacity-0"}`}
+          className={`absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-300 ${
+            menuOpen ? "opacity-100" : "opacity-0"
+          }`}
           onClick={() => setMenuOpen(false)}
         />
 
         <div
-          className={`absolute right-0 top-0 bottom-0 w-80 bg-[#1c1c1e] transition-transform duration-300
-            ${menuOpen ? "translate-x-0" : "translate-x-full"}`}
+          className={`absolute right-0 top-0 bottom-0 w-80 bg-[#1c1c1e] transition-transform duration-300 ${
+            menuOpen ? "translate-x-0" : "translate-x-full"
+          }`}
         >
           <div className="p-6 h-full flex flex-col">
             {/* Menu Header */}
@@ -171,12 +175,11 @@ const Dashboard = () => {
             <div className="border-t border-white/10 pt-4 space-y-2">
               <button
                 onClick={handleRefundClick}
-                className={`w-full flex items-center gap-3 p-4 rounded-lg transition-colors
-                  ${
-                    hasRefund
-                      ? "text-gray-500 cursor-not-allowed"
-                      : "text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                  }`}
+                className={`w-full flex items-center gap-3 p-4 rounded-lg transition-colors ${
+                  hasRefund
+                    ? "text-gray-500 cursor-not-allowed"
+                    : "text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                }`}
               >
                 <AlertCircle size={20} />
                 <span>{hasRefund ? "Refund Requested" : "Request Refund"}</span>
@@ -293,18 +296,25 @@ const Dashboard = () => {
 
           <button
             onClick={() => navigate("/plan")}
-            className="bg-white text-black font-semibold px-8 py-3.5 rounded-full text-lg 
-                     shadow-lg transform transition-all duration-300 hover:scale-105
-                     active:scale-95"
+            className="bg-white text-black font-semibold px-8 py-3.5 rounded-full text-lg shadow-lg transform transition-all duration-300 hover:scale-105 active:scale-95"
           >
             View My Plan
           </button>
 
+          {/* Botão Oracle Prime */}
+          <button
+            onClick={() => setIsOraclePrimeOpen(true)}
+            className="bg-[#1c1c1e] text-white font-semibold px-8 py-3.5 rounded-full text-lg shadow-lg transform transition-all duration-300 hover:scale-105 active:scale-95 border border-white/10"
+          >
+            <div className="flex items-center gap-2">
+              <Brain size={20} />
+              <span>Oracle Prime</span>
+            </div>
+          </button>
+
           <div
             onClick={() => navigate("/articles")}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-500/10 
-                     text-orange-400 rounded-full cursor-pointer hover:bg-orange-500/20 
-                     transition-all duration-200 mt-4 group"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-500/10 text-orange-400 rounded-full cursor-pointer hover:bg-orange-500/20 transition-all duration-200 mt-4 group"
           >
             <Flame className="w-5 h-5" />
             <span>View More Content</span>
@@ -319,6 +329,11 @@ const Dashboard = () => {
           <div className="w-32 h-1 bg-white/20 rounded-full" />
         </div>
       </div>
+
+      {/* Oracle Prime Modal */}
+      {isOraclePrimeOpen && (
+        <OraclePrime onClose={() => setIsOraclePrimeOpen(false)} />
+      )}
     </div>
   );
 };

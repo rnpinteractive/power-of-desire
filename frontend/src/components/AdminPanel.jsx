@@ -1,4 +1,4 @@
-import { api } from '../services/api';
+import { api } from "../services/api";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -14,6 +14,7 @@ import {
   XCircle,
   CheckCircle2,
   AlertTriangle,
+  Brain, // Novo ícone
 } from "lucide-react";
 
 const AdminPanel = () => {
@@ -33,8 +34,10 @@ const AdminPanel = () => {
     email: "",
     telefone: "",
   });
-  const navigate = useNavigate();
+  // Novo estado para o modal do Oracle Prime
+  const [isOraclePrimeModalOpen, setIsOraclePrimeModalOpen] = useState(false);
 
+  const navigate = useNavigate();
   const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
@@ -50,7 +53,9 @@ const AdminPanel = () => {
         throw new Error("Failed to fetch users");
       }
       const data = await response.json();
-      const validUsers = Array.isArray(data) ? data.filter(user => user.email) : [];
+      const validUsers = Array.isArray(data)
+        ? data.filter((user) => user.email)
+        : [];
       setUsers(validUsers);
       setTotalUsers(validUsers.length);
     } catch (error) {
@@ -97,13 +102,11 @@ const AdminPanel = () => {
     }
 
     try {
-      const response = await api.fetch(`/admin/users/${selectedUser.email}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(selectedUser),
-        }
-      );
+      const response = await api.fetch(`/admin/users/${selectedUser.email}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(selectedUser),
+      });
 
       if (response.ok) {
         fetchUsers();
@@ -127,7 +130,7 @@ const AdminPanel = () => {
 
     try {
       const response = await api.fetch(`/admin/users/${user.email}`, {
-        method: "DELETE"
+        method: "DELETE",
       });
 
       if (!response.ok) {
@@ -146,7 +149,8 @@ const AdminPanel = () => {
 
   const handleResetOnboarding = async (user) => {
     try {
-      const response = await api.fetch(`/admin/users/${user.email}/reset-onboarding`,
+      const response = await api.fetch(
+        `/admin/users/${user.email}/reset-onboarding`,
         {
           method: "POST",
         }
@@ -280,6 +284,9 @@ const AdminPanel = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">
                       Onboarding
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">
+                      Oracle Prime
+                    </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-white/60 uppercase tracking-wider">
                       Actions
                     </th>
@@ -330,6 +337,20 @@ const AdminPanel = () => {
                           )}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            user.oraclePrime?.isActive
+                              ? "bg-[#2c2c2e] text-white"
+                              : "bg-white/5 text-white/60"
+                          }`}
+                        >
+                          <Brain size={12} />
+                          <span>
+                            {user.oraclePrime?.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </span>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -341,6 +362,16 @@ const AdminPanel = () => {
                             title="Edit user"
                           >
                             <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setIsOraclePrimeModalOpen(true);
+                            }}
+                            className="p-2 text-white/60 hover:text-white hover:bg-[#2c2c2e] rounded-lg transition-colors"
+                            title="Oracle Prime Status"
+                          >
+                            <Brain size={16} />
                           </button>
                           <button
                             onClick={() => showConfirmModal("delete", user)}
@@ -450,6 +481,22 @@ const AdminPanel = () => {
                   }
                   className="w-full px-4 py-2 bg-[#2c2c2e] border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-blue-500"
                 />
+              </div>
+              <div className="space-y-2">
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={newUser.oraclePrime || false}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, oraclePrime: e.target.checked })
+                    }
+                    className="form-checkbox h-5 w-5 text-white border-white/20 rounded bg-[#2c2c2e]"
+                  />
+                  <span className="text-white/80">Enable Oracle Prime</span>
+                </label>
+                <p className="text-white/40 text-sm ml-8">
+                  Grant access to advanced AI analysis capabilities
+                </p>
               </div>
               <div className="flex justify-end gap-3">
                 <button
@@ -602,6 +649,90 @@ const AdminPanel = () => {
                 }`}
               >
                 {confirmAction.type === "delete" ? "Delete" : "Reset"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Oracle Prime Modal */}
+      {isOraclePrimeModalOpen && selectedUser && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-[#1c1c1e] rounded-xl w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <Brain size={24} className="text-white/80" />
+                <h2 className="text-xl font-semibold text-white">
+                  Oracle Prime Access
+                </h2>
+              </div>
+              <button
+                onClick={() => {
+                  setIsOraclePrimeModalOpen(false);
+                  setSelectedUser(null);
+                }}
+                className="text-white/60 hover:text-white"
+              >
+                <XCircle size={20} />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="bg-[#2c2c2e] rounded-xl p-4 mb-4">
+                <p className="text-white/80 font-medium mb-1">
+                  {selectedUser.nome}
+                </p>
+                <p className="text-white/60 text-sm">{selectedUser.email}</p>
+              </div>
+
+              <div className="bg-[#2c2c2e] rounded-xl p-4">
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedUser.oraclePrime?.isActive || false}
+                    onChange={async (e) => {
+                      try {
+                        const response = await api.fetch(
+                          `/admin/users/${selectedUser.email}/oracle-status`,
+                          {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              isActive: e.target.checked,
+                            }),
+                          }
+                        );
+
+                        if (!response.ok)
+                          throw new Error("Failed to update status");
+
+                        // Atualiza a lista de usuários
+                        fetchUsers();
+                        setIsOraclePrimeModalOpen(false);
+                        setSelectedUser(null);
+                      } catch (error) {
+                        alert("Error updating Oracle Prime status");
+                      }
+                    }}
+                    className="form-checkbox h-5 w-5 text-white border-white/20 rounded bg-[#1c1c1e]"
+                  />
+                  <span className="text-white/80">Enable Oracle Prime</span>
+                </label>
+                <p className="text-white/40 text-sm mt-2 ml-8">
+                  Grant access to advanced AI analysis capabilities
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setIsOraclePrimeModalOpen(false);
+                  setSelectedUser(null);
+                }}
+                className="px-4 py-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>

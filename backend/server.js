@@ -11,6 +11,8 @@ const userRoutes = require("./routes/users");
 const articlesRoutes = require("./routes/articles");
 const webhookRoutes = require("./routes/webhook");
 const authRoutes = require("./routes/auth"); // Add auth routes
+const oracleRoutes = require("./routes/oracle");
+const oracleWebhookRouter = require("./routes/oracle-webhook");
 
 // Before app.use(express.json())
 app.use(
@@ -29,6 +31,8 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/articles", articlesRoutes);
 app.use("/api/webhook", webhookRoutes);
+app.use("/api/oracle-prime", oracleRoutes);
+app.use("/api/oracle-webhook", oracleWebhookRouter);
 
 // Create necessary directories
 const createDirectories = async () => {
