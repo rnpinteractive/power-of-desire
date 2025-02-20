@@ -57,32 +57,37 @@ const OraclePrime = ({ onClose }) => {
           const history = await response.json();
           // Para cada arquivo salvo, criamos 2 mensagens: uma do usuário e outra da IA
           const loadedMessages = history.flatMap((chat) => {
+            // Caso o objeto response não exista (chats antigos), define valores padrão
+            const resp = chat.response || {
+              analysis: "",
+              strategy: "",
+              triggers: [],
+              warnings: [],
+            };
+
             const userMsg = {
               content: chat.message || "Image Analysis",
               isUser: true,
               timestamp: chat.timestamp,
               hasImage: chat.hasImage,
             };
-            // Formata a resposta da IA exatamente como no envio
+
             const aiMsg = {
               content: `Analysis:
-${chat.response.analysis || ""}
+${resp.analysis || ""}
 
 Strategic Approach:
-${chat.response.strategy || ""}
+${resp.strategy || ""}
 
 Key Triggers:
-${(chat.response.triggers || [])
-  .map((t) => `• ${t.type}: ${t.description}`)
-  .join("\n")}
+${(resp.triggers || []).map((t) => `• ${t.type}: ${t.description}`).join("\n")}
 
 ⚠️ Warnings:
-${(chat.response.warnings || [])
-  .map((w) => `• ${w.risk}: ${w.impact}`)
-  .join("\n")}`,
+${(resp.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
               isUser: false,
               timestamp: chat.timestamp,
             };
+
             return [userMsg, aiMsg];
           });
           // Ordena cronologicamente (mais antigo para o mais recente)
@@ -128,10 +133,10 @@ ${(chat.response.warnings || [])
       setIsProcessing(true);
       const timestamp = new Date().toISOString();
 
-      // Clear input immediately after starting to process
+      // Limpa o input imediatamente após iniciar o processamento
       setInput("");
 
-      // Add user message to chat
+      // Adiciona a mensagem do usuário ao chat
       const userMessage = {
         content: text || "Image Analysis",
         isUser: true,
@@ -148,7 +153,7 @@ ${(chat.response.warnings || [])
           message: text,
           image,
           email: user.email,
-          previousMessages: messages, // Send chat context
+          previousMessages: messages, // Envia o contexto do chat
         }),
       });
 
@@ -158,18 +163,20 @@ ${(chat.response.warnings || [])
 
       const data = await response.json();
 
-      // Format the response
-      const formattedResponse = `Analysis:\n${
-        data.analysis || ""
-      }\n\nStrategic Approach:\n${data.strategy || ""}\n\nKey Triggers:\n${(
-        data.triggers || []
-      )
-        .map((t) => `• ${t.type}: ${t.description}`)
-        .join("\n")}\n\n⚠️ Warnings:\n${(data.warnings || [])
-        .map((w) => `• ${w.risk}: ${w.impact}`)
-        .join("\n")}`;
+      // Formata a resposta
+      const formattedResponse = `Analysis:
+${data.analysis || ""}
 
-      // Add AI response to chat
+Strategic Approach:
+${data.strategy || ""}
+
+Key Triggers:
+${(data.triggers || []).map((t) => `• ${t.type}: ${t.description}`).join("\n")}
+
+⚠️ Warnings:
+${(data.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
+
+      // Adiciona a resposta da IA ao chat
       const aiMessage = {
         content: formattedResponse,
         isUser: false,
@@ -196,13 +203,12 @@ ${(chat.response.warnings || [])
 
   const handleSubmit = () => {
     if (!input.trim()) return;
-    // Limpa imediatamente o campo de input
     const userInput = input.trim();
     setInput("");
     processInput(userInput);
   };
 
-  // Auto-scroll chat
+  // Auto-scroll do chat
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop =
@@ -254,9 +260,9 @@ ${(chat.response.warnings || [])
           </div>
         )}
 
-        {/* Main Content */}
+        {/* Conteúdo Principal */}
         <div className="h-[calc(100%-64px)] md:h-[600px] flex">
-          {/* Chat Section */}
+          {/* Seção do Chat */}
           <div className="flex-1 flex flex-col">
             <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4">
               {isLoadingHistory ? (
@@ -282,7 +288,7 @@ ${(chat.response.warnings || [])
               )}
             </div>
 
-            {/* Input Area */}
+            {/* Área de Input */}
             <div className="p-4 border-t border-white/10">
               <div className="flex gap-2">
                 <button
