@@ -4,14 +4,14 @@ const openai = require("../config/openai");
 const fs = require("fs").promises;
 const path = require("path");
 
-// Middleware de acesso simplificado para debug
+// Middleware para verificar acesso
 const checkOracleAccess = async (req, res, next) => {
-  const email = req.body.email || req.params.email;
-  if (!email) {
-    return res.status(400).json({ error: "Email is required" });
-  }
-
   try {
+    const email = req.body.email || req.params.email;
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
     const userProfilePath = path.join(
       __dirname,
       "..",
@@ -23,82 +23,73 @@ const checkOracleAccess = async (req, res, next) => {
     const userData = JSON.parse(await fs.readFile(userProfilePath, "utf8"));
 
     if (!userData.oraclePrime?.isActive) {
-      return res.status(403).json({ error: "No access to Oracle Prime" });
+      return res
+        .status(403)
+        .json({ error: "No access to Oracle Prime", upgrade: true });
     }
 
     req.user = userData;
     next();
   } catch (error) {
-    // Log específico para debug
-    console.error(`Profile read error for ${email}:`, error);
-    return res.status(403).json({ error: "Access verification failed" });
+    res.status(500).json({ error: "Error checking access" });
   }
 };
 
+// Rota de análise
 router.post("/analyze", checkOracleAccess, async (req, res) => {
-  const { message, image, email } = req.body;
-
   try {
-    // 1. Tentar ler onboarding com fallback
-    let userData = {
-      objective: "Not specified",
-      timeWithoutContact: "Not specified",
-      separationCause: "Not specified",
-      currentInterest: "Not specified",
-      currentStatus: "Not specified",
-    };
+    const { message, image, email } = req.body;
 
-    try {
-      const onboardingData = await fs.readFile(
-        path.join(__dirname, "..", "data", "users", email, "onboarding.json"),
-        "utf8"
-      );
-      userData = JSON.parse(onboardingData);
-    } catch (err) {
-      console.warn(`Onboarding not found for ${email}, using defaults`);
-    }
+    // Carregar dados do onboarding
+    const onboardingPath = path.join(
+      __dirname,
+      "..",
+      "data",
+      "users",
+      email,
+      "onboarding.json"
+    );
+    const userData = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
 
-    // 2. Preparar o prompt
-    const prompt = `Based on the following user information:
-Objective: ${userData.objective}
-Time Without Contact: ${userData.timeWithoutContact}
-Separation Cause: ${userData.separationCause}
-Current Interest: ${userData.currentInterest}
-Current Status: ${userData.currentStatus}
+    let prompt = `Based on the following user information:
+  Objective: ${userData.objective}
+  Time Without Contact: ${userData.timeWithoutContact}
+  Separation Cause: ${userData.separationCause}
+  Current Interest: ${userData.currentInterest}
+  Current Status: ${userData.currentStatus}
+  
+  ${
+    image
+      ? "Analyze the provided image, focusing on emotional signals, body language, and relationship dynamics. Then, "
+      : ""
+  }
+  provide deep psychological insights and strategic guidance. Focus on dark psychology principles, emotional triggers, and specific tactical actions.
+  ${message ? `Consider this context: "${message}"` : ""}
+  
+  Your response must include:
+  1. A clear analysis of the current situation
+  2. Specific psychological triggers to employ
+  3. Strategic actions to take
+  4. Potential risks to avoid
+  
+  Return ONLY a VALID JSON OBJECT in this format:
+  {
+    "analysis": "Your in-depth psychological analysis",
+    "strategy": "Specific tactical approach to take",
+    "triggers": [
+      {
+        "type": "The type of psychological trigger",
+        "description": "How to implement it"
+      }
+    ],
+    "warnings": [
+      {
+        "risk": "Potential risk to avoid",
+        "impact": "Why it's dangerous"
+      }
+    ]
+  }`;
 
-${
-  image
-    ? "Analyze the provided image, focusing on emotional signals, body language, and relationship dynamics. Then, "
-    : ""
-}
-provide deep psychological insights and strategic guidance. Focus on dark psychology principles, emotional triggers, and specific tactical actions.
-${message ? `Consider this context: "${message}"` : ""}
-
-Your response must include:
-1. A clear analysis of the current situation
-2. Specific psychological triggers to employ
-3. Strategic actions to take
-4. Potential risks to avoid
-
-Return ONLY a VALID JSON OBJECT in this format:
-{
-  "analysis": "Your in-depth psychological analysis",
-  "strategy": "Specific tactical approach to take",
-  "triggers": [
-    {
-      "type": "The type of psychological trigger",
-      "description": "How to implement it"
-    }
-  ],
-  "warnings": [
-    {
-      "risk": "Potential risk to avoid",
-      "impact": "Why it's dangerous"
-    }
-  ]
-}`;
-
-    // 3. Fazer a chamada para OpenAI
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini-2024-07-18",
       messages: [
@@ -121,50 +112,46 @@ Return ONLY a VALID JSON OBJECT in this format:
       frequency_penalty: 0.3,
     });
 
-    // 4. Processar resposta
     const response = JSON.parse(completion.choices[0].message.content);
     const timestamp = new Date().toISOString();
 
-    // 5. Tentar salvar histórico (não bloqueia resposta se falhar)
-    try {
-      const chatDir = path.join(
-        __dirname,
-        "..",
-        "data",
-        "users",
-        email,
-        "oracle-chats"
-      );
-      await fs.mkdir(chatDir, { recursive: true });
+    // Salvar no histórico
+    const chatDir = path.join(
+      __dirname,
+      "..",
+      "data",
+      "users",
+      email,
+      "oracle-chats"
+    );
+    await fs.mkdir(chatDir, { recursive: true });
 
-      await fs.writeFile(
-        path.join(chatDir, `${Date.now()}.json`),
-        JSON.stringify({
-          message: message || "Image Analysis",
-          hasImage: !!image,
-          response: response,
-          timestamp: timestamp,
-        })
-      );
-    } catch (err) {
-      console.error("Error saving chat:", err);
-      // Continua mesmo se falhar ao salvar
-    }
+    const chatData = {
+      timestamp,
+      message: message || "Image Analysis",
+      hasImage: !!image,
+      response: response,
+    };
 
-    // 6. Retorna resposta
-    return res.json({
+    await fs.writeFile(
+      path.join(chatDir, `${Date.now()}.json`),
+      JSON.stringify(chatData, null, 2)
+    );
+
+    res.json({
       ...response,
       timestamp,
     });
   } catch (error) {
-    console.error("Analyze error details:", error);
-    return res.status(500).json({
-      error: "Analysis failed",
-      message: error.message,
+    console.error("Oracle analysis error:", error);
+    res.status(500).json({
+      error: "Failed to process analysis",
+      details: error.message,
     });
   }
 });
 
+// Rota de histórico
 router.get("/history/:email", checkOracleAccess, async (req, res) => {
   try {
     const chatDir = path.join(
@@ -175,43 +162,25 @@ router.get("/history/:email", checkOracleAccess, async (req, res) => {
       req.params.email,
       "oracle-chats"
     );
+    await fs.mkdir(chatDir, { recursive: true });
 
-    try {
-      await fs.mkdir(chatDir, { recursive: true });
-    } catch (err) {
-      console.warn("Chat dir creation failed:", err);
-      // Continua mesmo se falhar
-    }
-
-    let files = [];
-    try {
-      files = await fs.readdir(chatDir);
-    } catch (err) {
-      console.error("Reading chat dir failed:", err);
-      return res.json([]); // Retorna array vazio se não encontrar arquivos
-    }
-
-    const chats = [];
-    for (const file of files) {
-      try {
+    const files = await fs.readdir(chatDir);
+    const chats = await Promise.all(
+      files.map(async (file) => {
         const content = await fs.readFile(path.join(chatDir, file), "utf8");
-        chats.push(JSON.parse(content));
-      } catch (err) {
-        console.error(`Error reading chat file ${file}:`, err);
-        // Continua para o próximo arquivo
-      }
-    }
+        return JSON.parse(content);
+      })
+    );
 
-    // Ordena por timestamp (mais antigo primeiro)
-    chats.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    // Ordenar do mais antigo para o mais novo
+    const sortedChats = chats.sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    );
 
-    return res.json(chats);
+    res.json(sortedChats);
   } catch (error) {
-    console.error("History error details:", error);
-    return res.status(500).json({
-      error: "Failed to fetch history",
-      message: error.message,
-    });
+    console.error("History error:", error);
+    res.status(500).json({ error: "Failed to fetch chat history" });
   }
 });
 
