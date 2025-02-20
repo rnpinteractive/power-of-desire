@@ -7,7 +7,8 @@ const path = require("path");
 // Middleware para verificar acesso
 const checkOracleAccess = async (req, res, next) => {
   try {
-    const { email } = req.body;
+    // Pega email do body ou params
+    const email = req.body.email || req.params.email;
     if (!email) {
       return res.status(400).json({ error: "Email is required" });
     }
@@ -52,19 +53,43 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
     const userData = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
 
     let prompt = `Based on the following user information:
-Objective: ${userData.objective}
-Time Without Contact: ${userData.timeWithoutContact}
-Separation Cause: ${userData.separationCause}
-Current Interest: ${userData.currentInterest}
-Current Status: ${userData.currentStatus}
-
-`;
-
-    if (image) {
-      prompt += `Analyze the provided image, focusing on emotional signals, body language, and relationship dynamics. Then,`;
-    }
-
-    prompt += `provide deep psychological insights and strategic guidance...`; // resto do prompt
+  Objective: ${userData.objective}
+  Time Without Contact: ${userData.timeWithoutContact}
+  Separation Cause: ${userData.separationCause}
+  Current Interest: ${userData.currentInterest}
+  Current Status: ${userData.currentStatus}
+  
+  ${
+    image
+      ? "Analyze the provided image, focusing on emotional signals, body language, and relationship dynamics. Then, "
+      : ""
+  }
+  provide deep psychological insights and strategic guidance. Focus on dark psychology principles, emotional triggers, and specific tactical actions.
+  ${message ? `Consider this context: "${message}"` : ""}
+  
+  Your response must include:
+  1. A clear analysis of the current situation
+  2. Specific psychological triggers to employ
+  3. Strategic actions to take
+  4. Potential risks to avoid
+  
+  Return ONLY a VALID JSON OBJECT in this format:
+  {
+    "analysis": "Your in-depth psychological analysis",
+    "strategy": "Specific tactical approach to take",
+    "triggers": [
+      {
+        "type": "The type of psychological trigger",
+        "description": "How to implement it"
+      }
+    ],
+    "warnings": [
+      {
+        "risk": "Potential risk to avoid",
+        "impact": "Why it's dangerous"
+      }
+    ]
+  }`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini-2024-07-18",
@@ -88,6 +113,9 @@ Current Status: ${userData.currentStatus}
       frequency_penalty: 0.3,
     });
 
+    const response = JSON.parse(completion.choices[0].message.content);
+
+    // Salvar no histórico
     const chatDir = path.join(
       __dirname,
       "..",
@@ -100,9 +128,10 @@ Current Status: ${userData.currentStatus}
 
     const chatData = {
       timestamp: new Date().toISOString(),
-      message,
+      message: message || "Image Analysis",
       hasImage: !!image,
-      response: completion.choices[0].message.content,
+      response: response, // Salva a resposta formatada
+      imageAnalysis: !!image,
     };
 
     await fs.writeFile(
@@ -110,10 +139,20 @@ Current Status: ${userData.currentStatus}
       JSON.stringify(chatData, null, 2)
     );
 
-    res.json({ response: JSON.parse(completion.choices[0].message.content) });
+    // Retorna no formato que o frontend espera
+    res.json({
+      analysis: response.analysis,
+      strategy: response.strategy,
+      triggers: response.triggers,
+      warnings: response.warnings,
+      timestamp: chatData.timestamp,
+    });
   } catch (error) {
     console.error("Oracle analysis error:", error);
-    res.status(500).json({ error: "Failed to process analysis" });
+    res.status(500).json({
+      error: "Failed to process analysis",
+      details: error.message,
+    });
   }
 });
 

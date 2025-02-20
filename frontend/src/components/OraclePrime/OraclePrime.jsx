@@ -134,16 +134,17 @@ const OraclePrime = ({ onClose }) => {
 
       const data = await response.json();
 
-      // Formata a resposta da IA
-      const formattedResponse = `${data.analysis}
+      // Ajuste na formatação da resposta (sem Markdown)
+      const formattedResponse = `Analysis:
+${data.analysis}
 
-**Strategic Approach:**
+Strategic Approach:
 ${data.strategy}
 
-**Key Triggers:**
+Key Triggers:
 ${data.triggers.map((t) => `• ${t.type}: ${t.description}`).join("\n")}
 
-**⚠️ Warnings:**
+⚠️ Warnings:
 ${data.warnings.map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
 
       setMessages((prev) => [
