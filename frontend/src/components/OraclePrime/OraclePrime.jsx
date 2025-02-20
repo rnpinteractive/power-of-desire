@@ -48,25 +48,44 @@ const OraclePrime = ({ onClose }) => {
     return <UpgradePrompt onClose={onClose} />;
   }
 
-  // Carrega histórico ao montar
+  // Carrega histórico ao montar e transforma cada chat em 2 mensagens (usuário e IA)
   useEffect(() => {
     const loadHistory = async () => {
       try {
         const response = await api.fetch(`/oracle-prime/history/${user.email}`);
         if (response.ok) {
           const history = await response.json();
-          setMessages(
-            history.map((chat) => ({
+          // Para cada arquivo salvo, criamos 2 mensagens: uma do usuário e outra da IA
+          const loadedMessages = history.flatMap((chat) => {
+            const userMsg = {
               content: chat.message || "Image Analysis",
               isUser: true,
               timestamp: chat.timestamp,
               hasImage: chat.hasImage,
-              response: {
-                content: chat.response,
-                timestamp: chat.timestamp,
-              },
-            }))
+            };
+            // Formata a resposta da IA exatamente como no envio
+            const aiMsg = {
+              content: `Analysis:
+${chat.response.analysis}
+
+Strategic Approach:
+${chat.response.strategy}
+
+Key Triggers:
+${chat.response.triggers.map((t) => `• ${t.type}: ${t.description}`).join("\n")}
+
+⚠️ Warnings:
+${chat.response.warnings.map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
+              isUser: false,
+              timestamp: chat.timestamp,
+            };
+            return [userMsg, aiMsg];
+          });
+          // Ordena cronologicamente (mais antigo para o mais recente)
+          loadedMessages.sort(
+            (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
           );
+          setMessages(loadedMessages);
         }
       } catch (error) {
         console.error("Error loading chat history:", error);
@@ -93,6 +112,7 @@ const OraclePrime = ({ onClose }) => {
       if (window.innerWidth < 768) {
         setShowMobileImage(true);
       }
+      // Limpa o input e processa a imagem
       processInput(null, base64);
     } catch (error) {
       console.error("Error processing image:", error);
@@ -102,7 +122,6 @@ const OraclePrime = ({ onClose }) => {
   const processInput = async (text = null, image = null) => {
     try {
       setIsProcessing(true);
-
       const timestamp = new Date().toISOString();
 
       // Adiciona mensagem do usuário
@@ -134,7 +153,7 @@ const OraclePrime = ({ onClose }) => {
 
       const data = await response.json();
 
-      // Ajuste na formatação da resposta (sem Markdown)
+      // Formata a resposta da IA
       const formattedResponse = `Analysis:
 ${data.analysis}
 
@@ -166,7 +185,7 @@ ${data.warnings.map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
       ]);
     } finally {
       setIsProcessing(false);
-      setInput("");
+      // Se estiver em mobile, esconde a imagem após a resposta
       if (window.innerWidth < 768) {
         setShowMobileImage(false);
       }
@@ -175,7 +194,10 @@ ${data.warnings.map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
 
   const handleSubmit = () => {
     if (!input.trim()) return;
-    processInput(input.trim());
+    // Limpa imediatamente o campo de input
+    const userInput = input.trim();
+    setInput("");
+    processInput(userInput);
   };
 
   // Auto-scroll chat
