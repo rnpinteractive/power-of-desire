@@ -124,18 +124,18 @@ ${chat.response.warnings.map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
       setIsProcessing(true);
       const timestamp = new Date().toISOString();
 
-      // Adiciona mensagem do usuário
-      if (text || image) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            content: text || "Image Analysis",
-            isUser: true,
-            timestamp,
-            hasImage: !!image,
-          },
-        ]);
-      }
+      // Clear input immediately after starting to process
+      setInput("");
+
+      // Add user message to chat
+      const userMessage = {
+        content: text || "Image Analysis",
+        isUser: true,
+        timestamp,
+        hasImage: !!image,
+      };
+
+      setMessages((prev) => [...prev, userMessage]);
 
       const response = await api.fetch("/oracle-prime/analyze", {
         method: "POST",
@@ -144,6 +144,7 @@ ${chat.response.warnings.map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
           message: text,
           image,
           email: user.email,
+          previousMessages: messages, // Send chat context
         }),
       });
 
@@ -153,27 +154,25 @@ ${chat.response.warnings.map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
 
       const data = await response.json();
 
-      // Formata a resposta da IA
-      const formattedResponse = `Analysis:
-${data.analysis}
+      // Format the response
+      const formattedResponse = `Analysis:\n${
+        data.analysis
+      }\n\nStrategic Approach:\n${
+        data.strategy
+      }\n\nKey Triggers:\n${data.triggers
+        .map((t) => `• ${t.type}: ${t.description}`)
+        .join("\n")}\n\n⚠️ Warnings:\n${data.warnings
+        .map((w) => `• ${w.risk}: ${w.impact}`)
+        .join("\n")}`;
 
-Strategic Approach:
-${data.strategy}
+      // Add AI response to chat
+      const aiMessage = {
+        content: formattedResponse,
+        isUser: false,
+        timestamp: data.timestamp || new Date().toISOString(),
+      };
 
-Key Triggers:
-${data.triggers.map((t) => `• ${t.type}: ${t.description}`).join("\n")}
-
-⚠️ Warnings:
-${data.warnings.map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          content: formattedResponse,
-          isUser: false,
-          timestamp: data.timestamp || new Date().toISOString(),
-        },
-      ]);
+      setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
       setMessages((prev) => [
         ...prev,
@@ -185,7 +184,6 @@ ${data.warnings.map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
       ]);
     } finally {
       setIsProcessing(false);
-      // Se estiver em mobile, esconde a imagem após a resposta
       if (window.innerWidth < 768) {
         setShowMobileImage(false);
       }

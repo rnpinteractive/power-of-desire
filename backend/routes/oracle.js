@@ -7,6 +7,7 @@ const path = require("path");
 // Middleware para verificar acesso
 const checkOracleAccess = async (req, res, next) => {
   try {
+    // Pega email do body ou params
     const email = req.body.email || req.params.email;
     if (!email) {
       return res.status(400).json({ error: "Email is required" });
@@ -31,17 +32,16 @@ const checkOracleAccess = async (req, res, next) => {
     req.user = userData;
     next();
   } catch (error) {
-    console.error("Error in checkOracleAccess:", error);
-    return res.status(500).json({ error: "Error checking access" });
+    res.status(500).json({ error: "Error checking access" });
   }
 };
 
 // Rota de análise
 router.post("/analyze", checkOracleAccess, async (req, res) => {
   try {
-    const { message, image, email } = req.body;
+    const { message, image, email, previousMessages } = req.body;
 
-    // Carrega os dados do onboarding
+    // Load onboarding data
     const onboardingPath = path.join(
       __dirname,
       "..",
@@ -50,68 +50,81 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
       email,
       "onboarding.json"
     );
-    let onboardingData;
-    try {
-      onboardingData = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
-    } catch (err) {
-      console.error("Error reading onboarding file:", err);
-      return res.status(500).json({ error: "Failed to load onboarding data" });
-    }
+    const userData = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
 
-    // Cria o contexto para o modelo, separando as informações do perfil e a query do usuário
-    const messagesForAI = [
+    // Create context-aware prompt
+    let prompt = `Based on the following user information:
+  Objective: ${userData.objective}
+  Time Without Contact: ${userData.timeWithoutContact}
+  Separation Cause: ${userData.separationCause}
+  Current Interest: ${userData.currentInterest}
+  Current Status: ${userData.currentStatus}
+  
+  Previous context:
+  ${
+    previousMessages
+      ?.map((msg) => `${msg.isUser ? "User" : "Assistant"}: ${msg.content}`)
+      .join("\n") || "No previous context"
+  }
+  
+  ${
+    image
+      ? "Analyze the provided image, focusing on emotional signals, body language, and relationship dynamics. Then, "
+      : ""
+  }
+  Analyze the current situation and provide guidance based on the user's message and previous context.
+  ${message ? `Current message: "${message}"` : ""}
+  
+  Your response must include:
+  1. A clear analysis considering all previous context
+  2. Specific psychological triggers to employ
+  3. Strategic actions to take
+  4. Potential risks to avoid
+  
+  Return ONLY a VALID JSON OBJECT in this format:
+  {
+    "analysis": "Your in-depth psychological analysis",
+    "strategy": "Specific tactical approach to take",
+    "triggers": [
       {
-        role: "system",
-        content:
-          "You are a relationship expert who provides responses EXCLUSIVELY in a valid JSON format.",
-      },
+        "type": "The type of psychological trigger",
+        "description": "How to implement it"
+      }
+    ],
+    "warnings": [
       {
-        role: "user",
-        content: `User Profile:
-Objective: ${onboardingData.objective}
-Time Without Contact: ${onboardingData.timeWithoutContact}
-Separation Cause: ${onboardingData.separationCause}
-Current Interest: ${onboardingData.currentInterest}
-Current Status: ${onboardingData.currentStatus}`,
-      },
-      {
-        role: "user",
-        content: message ? `User Query: ${message}` : "Image Analysis",
-      },
-    ];
+        "risk": "Potential risk to avoid",
+        "impact": "Why it's dangerous"
+      }
+    ]
+  }`;
 
-    if (image) {
-      messagesForAI.push({
-        role: "user",
-        content: `Image: ${image}`,
-      });
-    }
-
-    // Chama o OpenAI
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini-2024-07-18",
-      messages: messagesForAI,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a relationship expert who provides responses EXCLUSIVELY in a valid JSON format. Consider all previous context when providing advice.",
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            ...(image ? [{ type: "image_url", image_url: image }] : []),
+          ],
+        },
+      ],
       temperature: 0.7,
       max_tokens: 1000,
       presence_penalty: 0.3,
       frequency_penalty: 0.3,
     });
 
-    // Loga a resposta bruta para ajudar no debug
-    console.log("OpenAI raw response:", completion.choices[0].message.content);
+    const response = JSON.parse(completion.choices[0].message.content);
+    const timestamp = new Date().toISOString();
 
-    let responseObj;
-    try {
-      responseObj = JSON.parse(completion.choices[0].message.content);
-    } catch (err) {
-      console.error("JSON parsing error from OpenAI response:", err);
-      return res.status(500).json({
-        error: "Failed to parse AI response",
-        details: completion.choices[0].message.content,
-      });
-    }
-
-    // Salva a interação completa (mensagem do usuário + resposta da IA) em um único arquivo JSON
+    // Save complete interaction to history
     const chatDir = path.join(
       __dirname,
       "..",
@@ -123,11 +136,16 @@ Current Status: ${onboardingData.currentStatus}`,
     await fs.mkdir(chatDir, { recursive: true });
 
     const chatData = {
-      timestamp: new Date().toISOString(),
-      message: message || "Image Analysis",
-      hasImage: !!image,
-      response: responseObj,
-      imageAnalysis: !!image,
+      timestamp,
+      userMessage: {
+        content: message || "Image Analysis",
+        hasImage: !!image,
+        timestamp,
+      },
+      aiResponse: {
+        content: response,
+        timestamp,
+      },
     };
 
     await fs.writeFile(
@@ -135,13 +153,9 @@ Current Status: ${onboardingData.currentStatus}`,
       JSON.stringify(chatData, null, 2)
     );
 
-    // Retorna os dados formatados para o frontend
     res.json({
-      analysis: responseObj.analysis,
-      strategy: responseObj.strategy,
-      triggers: responseObj.triggers,
-      warnings: responseObj.warnings,
-      timestamp: chatData.timestamp,
+      ...response,
+      timestamp,
     });
   } catch (error) {
     console.error("Oracle analysis error:", error);
@@ -166,51 +180,43 @@ router.get("/history/:email", checkOracleAccess, async (req, res) => {
     await fs.mkdir(chatDir, { recursive: true });
 
     const files = await fs.readdir(chatDir);
-    const chats = [];
-    for (const file of files) {
-      try {
+    const chats = await Promise.all(
+      files.map(async (file) => {
         const content = await fs.readFile(path.join(chatDir, file), "utf8");
-        chats.push(JSON.parse(content));
-      } catch (err) {
-        console.error("Error reading chat file:", file, err);
-        // Aqui, podemos optar por ignorar arquivos inválidos
-      }
-    }
+        return JSON.parse(content);
+      })
+    );
 
-    // Para cada arquivo, criamos duas mensagens: uma do usuário e outra da IA
-    const messagesToReturn = chats.flatMap((chat) => {
-      const userMessage = {
-        content: chat.message || "Image Analysis",
-        isUser: true,
-        timestamp: chat.timestamp,
-        hasImage: chat.hasImage,
-      };
-      const assistantMessage = {
-        content: `Analysis:
-${chat.response.analysis}
-
-Strategic Approach:
-${chat.response.strategy}
-
-Key Triggers:
-${chat.response.triggers.map((t) => `• ${t.type}: ${t.description}`).join("\n")}
-
-⚠️ Warnings:
-${chat.response.warnings.map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
-        isUser: false,
-        timestamp: chat.timestamp,
-      };
-      return [userMessage, assistantMessage];
-    });
-
-    // Ordena as mensagens cronologicamente (mais antigo primeiro)
-    messagesToReturn.sort(
+    // Sort by timestamp in ascending order (oldest to newest)
+    const sortedChats = chats.sort(
       (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
     );
 
-    res.json(messagesToReturn);
+    // Transform to frontend message format
+    const messages = sortedChats.flatMap((chat) => [
+      {
+        content: chat.userMessage.content,
+        isUser: true,
+        timestamp: chat.userMessage.timestamp,
+        hasImage: chat.userMessage.hasImage,
+      },
+      {
+        content: `Analysis:\n${
+          chat.aiResponse.content.analysis
+        }\n\nStrategic Approach:\n${
+          chat.aiResponse.content.strategy
+        }\n\nKey Triggers:\n${chat.aiResponse.content.triggers
+          .map((t) => `• ${t.type}: ${t.description}`)
+          .join("\n")}\n\n⚠️ Warnings:\n${chat.aiResponse.content.warnings
+          .map((w) => `• ${w.risk}: ${w.impact}`)
+          .join("\n")}`,
+        isUser: false,
+        timestamp: chat.aiResponse.timestamp,
+      },
+    ]);
+
+    res.json(messages);
   } catch (error) {
-    console.error("Error in history endpoint:", error);
     res.status(500).json({ error: "Failed to fetch chat history" });
   }
 });
