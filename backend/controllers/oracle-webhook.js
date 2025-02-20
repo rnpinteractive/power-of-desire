@@ -2,10 +2,10 @@ const fs = require("fs").promises;
 const path = require("path");
 const crypto = require("crypto");
 
-const HOTMART_WEBHOOK_SECRET = "jxw4V0smfdPwstXOrdNxkzAkwcyhOA2167811";
+const HOTMART_WEBHOOK_SECRET = "jxw4V0smfdPwstXOrdNxkzAkwcyhOA2167811"; // Mesmo do outro webhook
 
 const verifySignature = (rawBody, hottok) => {
-  return true; // Para testes, igual ao atual
+  return true; // Para testes, igual ao outro
 };
 
 const activateOraclePrime = async (email) => {
@@ -13,33 +13,13 @@ const activateOraclePrime = async (email) => {
     const userDir = path.join(__dirname, "..", "data", "users", email);
     const profilePath = path.join(userDir, "profile.json");
 
-    // Verifica se o usuário existe
-    let userData;
-    try {
-      userData = JSON.parse(await fs.readFile(profilePath, "utf8"));
-    } catch (error) {
-      // Se não existe, cria novo usuário
-      userData = {
-        email,
-        nome: email.split("@")[0], // Nome temporário
-        telefone: "",
-        createdAt: new Date().toISOString(),
-        onboardingCompleted: false,
-      };
+    const userData = JSON.parse(await fs.readFile(profilePath, "utf8"));
 
-      // Cria estrutura de diretórios
-      await fs.mkdir(userDir, { recursive: true });
-      await fs.mkdir(path.join(userDir, "plans"), { recursive: true });
-      await fs.mkdir(path.join(userDir, "oracle-chats"), { recursive: true });
-    }
-
-    // Ativa Oracle Prime
     userData.oraclePrime = {
       isActive: true,
       activatedAt: new Date().toISOString(),
     };
 
-    // Salva/atualiza profile
     await fs.writeFile(profilePath, JSON.stringify(userData, null, 2));
     return true;
   } catch (error) {
@@ -61,12 +41,10 @@ const deactivateOraclePrime = async (email) => {
 
     const userData = JSON.parse(await fs.readFile(profilePath, "utf8"));
 
-    // Desativa Oracle Prime mantendo histórico
     userData.oraclePrime = {
       isActive: false,
       deactivatedAt: new Date().toISOString(),
-      wasActive: true, // Marca que já teve acesso
-      activatedAt: userData.oraclePrime?.activatedAt, // Mantém data original
+      wasActive: true,
     };
 
     await fs.writeFile(profilePath, JSON.stringify(userData, null, 2));
@@ -113,15 +91,13 @@ const processOracleWebhook = async (req, res) => {
       }
 
       default:
-        console.log("Evento não reconhecido:", event);
-        return res.status(200).json({
-          message: "Evento não processado: tipo não reconhecido",
-        });
+        console.log("Evento não processado:", event);
+        return res.status(200).json({ message: "Evento não reconhecido" });
     }
 
-    return res.status(200).json({
-      message: "Oracle webhook processado com sucesso",
-    });
+    return res
+      .status(200)
+      .json({ message: "Oracle webhook processado com sucesso" });
   } catch (error) {
     console.error("Erro ao processar oracle webhook:", error);
     return res.status(500).json({ error: "Erro interno no servidor" });
