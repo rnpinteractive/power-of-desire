@@ -1,14 +1,21 @@
-// UpgradePrompt.jsx
 import React from "react";
-import { Brain, ArrowUpRight } from "lucide-react";
+import { Brain, ArrowUpRight, X } from "lucide-react";
 
 const UpgradePrompt = ({ onClose }) => {
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-lg flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-lg flex items-center justify-center p-4 z-50 overflow-y-auto">
       <div className="w-full max-w-md">
         <div className="relative bg-[#1c1c1e] rounded-2xl overflow-hidden">
           {/* Header with fancy gradient */}
           <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent" />
+
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+          >
+            <X size={24} />
+          </button>
 
           {/* Content */}
           <div className="relative p-8">

@@ -97,7 +97,8 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black overflow-hidden">
+    // Permite scroll vertical para mobile (substituímos overflow-hidden por overflow-y-auto)
+    <div className="min-h-screen bg-black overflow-y-auto">
       {/* Menu Button */}
       <button
         onClick={() => setMenuOpen(true)}
@@ -207,7 +208,8 @@ const Dashboard = () => {
         userEmail={user?.email}
       />
 
-      <div className="h-screen flex flex-col px-8 pt-8">
+      {/* Alterado de h-screen para min-h-screen para que o conteúdo se expanda se necessário */}
+      <div className="min-h-screen flex flex-col px-8 pt-8">
         {/* Logo */}
         <div className="mb-8 flex items-center justify-between">
           <img
