@@ -7,7 +7,6 @@ const path = require("path");
 // Middleware para verificar acesso
 const checkOracleAccess = async (req, res, next) => {
   try {
-    // Pega email do body ou params
     const email = req.body.email || req.params.email;
     if (!email) {
       return res.status(400).json({ error: "Email is required" });
@@ -32,7 +31,8 @@ const checkOracleAccess = async (req, res, next) => {
     req.user = userData;
     next();
   } catch (error) {
-    res.status(500).json({ error: "Error checking access" });
+    console.error("Error in checkOracleAccess:", error);
+    return res.status(500).json({ error: "Error checking access" });
   }
 };
 
@@ -41,7 +41,7 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
   try {
     const { message, image, email } = req.body;
 
-    // Carregar dados do onboarding
+    // Carrega os dados do onboarding
     const onboardingPath = path.join(
       __dirname,
       "..",
@@ -50,10 +50,16 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
       email,
       "onboarding.json"
     );
-    const userData = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
+    let onboardingData;
+    try {
+      onboardingData = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
+    } catch (err) {
+      console.error("Error reading onboarding file:", err);
+      return res.status(500).json({ error: "Failed to load onboarding data" });
+    }
 
-    // Cria um array de mensagens para estruturar melhor o contexto:
-    const messages = [
+    // Cria o contexto para o modelo, separando as informações do perfil e a query do usuário
+    const messagesForAI = [
       {
         role: "system",
         content:
@@ -62,11 +68,11 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
       {
         role: "user",
         content: `User Profile:
-Objective: ${userData.objective}
-Time Without Contact: ${userData.timeWithoutContact}
-Separation Cause: ${userData.separationCause}
-Current Interest: ${userData.currentInterest}
-Current Status: ${userData.currentStatus}`,
+Objective: ${onboardingData.objective}
+Time Without Contact: ${onboardingData.timeWithoutContact}
+Separation Cause: ${onboardingData.separationCause}
+Current Interest: ${onboardingData.currentInterest}
+Current Status: ${onboardingData.currentStatus}`,
       },
       {
         role: "user",
@@ -75,25 +81,37 @@ Current Status: ${userData.currentStatus}`,
     ];
 
     if (image) {
-      messages.push({
+      messagesForAI.push({
         role: "user",
         content: `Image: ${image}`,
       });
     }
 
+    // Chama o OpenAI
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini-2024-07-18",
-      messages: messages,
+      messages: messagesForAI,
       temperature: 0.7,
       max_tokens: 1000,
       presence_penalty: 0.3,
       frequency_penalty: 0.3,
     });
 
-    // A resposta da IA deve ser um JSON válido conforme solicitado
-    const response = JSON.parse(completion.choices[0].message.content);
+    // Loga a resposta bruta para ajudar no debug
+    console.log("OpenAI raw response:", completion.choices[0].message.content);
 
-    // Salva a interação (mensagem do usuário e resposta da IA) em um único arquivo
+    let responseObj;
+    try {
+      responseObj = JSON.parse(completion.choices[0].message.content);
+    } catch (err) {
+      console.error("JSON parsing error from OpenAI response:", err);
+      return res.status(500).json({
+        error: "Failed to parse AI response",
+        details: completion.choices[0].message.content,
+      });
+    }
+
+    // Salva a interação completa (mensagem do usuário + resposta da IA) em um único arquivo JSON
     const chatDir = path.join(
       __dirname,
       "..",
@@ -108,7 +126,7 @@ Current Status: ${userData.currentStatus}`,
       timestamp: new Date().toISOString(),
       message: message || "Image Analysis",
       hasImage: !!image,
-      response: response, // Armazena a resposta completa da IA
+      response: responseObj,
       imageAnalysis: !!image,
     };
 
@@ -117,12 +135,12 @@ Current Status: ${userData.currentStatus}`,
       JSON.stringify(chatData, null, 2)
     );
 
-    // Retorna no formato que o frontend espera
+    // Retorna os dados formatados para o frontend
     res.json({
-      analysis: response.analysis,
-      strategy: response.strategy,
-      triggers: response.triggers,
-      warnings: response.warnings,
+      analysis: responseObj.analysis,
+      strategy: responseObj.strategy,
+      triggers: responseObj.triggers,
+      warnings: responseObj.warnings,
       timestamp: chatData.timestamp,
     });
   } catch (error) {
@@ -134,7 +152,7 @@ Current Status: ${userData.currentStatus}`,
   }
 });
 
-// Rota de histórico - agora retorna uma lista de mensagens (user + IA) em ordem cronológica
+// Rota de histórico
 router.get("/history/:email", checkOracleAccess, async (req, res) => {
   try {
     const chatDir = path.join(
@@ -148,15 +166,19 @@ router.get("/history/:email", checkOracleAccess, async (req, res) => {
     await fs.mkdir(chatDir, { recursive: true });
 
     const files = await fs.readdir(chatDir);
-    const chats = await Promise.all(
-      files.map(async (file) => {
+    const chats = [];
+    for (const file of files) {
+      try {
         const content = await fs.readFile(path.join(chatDir, file), "utf8");
-        return JSON.parse(content);
-      })
-    );
+        chats.push(JSON.parse(content));
+      } catch (err) {
+        console.error("Error reading chat file:", file, err);
+        // Aqui, podemos optar por ignorar arquivos inválidos
+      }
+    }
 
-    // Para cada arquivo, cria 2 mensagens (user e assistant)
-    const messages = chats.flatMap((chat) => {
+    // Para cada arquivo, criamos duas mensagens: uma do usuário e outra da IA
+    const messagesToReturn = chats.flatMap((chat) => {
       const userMessage = {
         content: chat.message || "Image Analysis",
         isUser: true,
@@ -181,11 +203,14 @@ ${chat.response.warnings.map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
       return [userMessage, assistantMessage];
     });
 
-    // Ordena cronologicamente (mais antigo primeiro)
-    messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    // Ordena as mensagens cronologicamente (mais antigo primeiro)
+    messagesToReturn.sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    );
 
-    res.json(messages);
+    res.json(messagesToReturn);
   } catch (error) {
+    console.error("Error in history endpoint:", error);
     res.status(500).json({ error: "Failed to fetch chat history" });
   }
 });
