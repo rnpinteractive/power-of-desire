@@ -35,6 +35,29 @@ const checkOracleAccess = async (req, res, next) => {
   }
 };
 
+// Função auxiliar para carregar/salvar histórico
+const getHistoryPath = (email) => {
+  return path.join(__dirname, "..", "data", "users", email, "history.json");
+};
+
+const loadHistory = async (email) => {
+  try {
+    const historyPath = getHistoryPath(email);
+    const content = await fs.readFile(historyPath, "utf8");
+    return JSON.parse(content);
+  } catch (error) {
+    // Se o arquivo não existir, retorna array vazio
+    return [];
+  }
+};
+
+const saveHistory = async (email, history) => {
+  const historyPath = getHistoryPath(email);
+  const userDir = path.dirname(historyPath);
+  await fs.mkdir(userDir, { recursive: true });
+  await fs.writeFile(historyPath, JSON.stringify(history, null, 2));
+};
+
 // Rota de análise
 router.post("/analyze", checkOracleAccess, async (req, res) => {
   try {
@@ -51,44 +74,29 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
     );
     const userData = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
 
-    let prompt = `Based on the following user information:
-  Objective: ${userData.objective}
-  Time Without Contact: ${userData.timeWithoutContact}
-  Separation Cause: ${userData.separationCause}
-  Current Interest: ${userData.currentInterest}
-  Current Status: ${userData.currentStatus}
-  
-  ${
-    image
-      ? "Analyze the provided image, focusing on emotional signals, body language, and relationship dynamics. Then, "
-      : ""
-  }
-  provide deep psychological insights and strategic guidance. Focus on dark psychology principles, emotional triggers, and specific tactical actions.
-  ${message ? `Consider this context: "${message}"` : ""}
-  
-  Your response must include:
-  1. A clear analysis of the current situation
-  2. Specific psychological triggers to employ
-  3. Strategic actions to take
-  4. Potential risks to avoid
-  
-  Return ONLY a VALID JSON OBJECT in this format:
-  {
-    "analysis": "Your in-depth psychological analysis",
-    "strategy": "Specific tactical approach to take",
-    "triggers": [
-      {
-        "type": "The type of psychological trigger",
-        "description": "How to implement it"
-      }
-    ],
-    "warnings": [
-      {
-        "risk": "Potential risk to avoid",
-        "impact": "Why it's dangerous"
-      }
-    ]
-  }`;
+    let prompt = `You are a conversational AI assistant that helps with relationships. 
+Keep in mind this context about the user when responding:
+
+- Their objective: ${userData.objective}
+- Time without contact: ${userData.timeWithoutContact}
+- Separation cause: ${userData.separationCause}
+- Current interest level: ${userData.currentInterest}
+- Current status: ${userData.currentStatus}
+
+${
+  image
+    ? "First analyze this image considering emotional signals, body language, and relationship dynamics. Then "
+    : ""
+}
+respond to the user in a natural, conversational way. Your responses should be direct and in natural language, not in any specific format.
+
+Use this context to provide appropriate advice and guidance while maintaining a natural conversation.
+
+${
+  message
+    ? `The user's message is: "${message}"`
+    : "Please analyze the image provided"
+}`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini-2024-07-18",
@@ -96,7 +104,7 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
         {
           role: "system",
           content:
-            "You are a relationship expert who provides responses EXCLUSIVELY in a valid JSON format.",
+            "You are a relationship expert who maintains natural conversation while providing strategic guidance.",
         },
         {
           role: "user",
@@ -112,34 +120,28 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
       frequency_penalty: 0.3,
     });
 
-    const response = JSON.parse(completion.choices[0].message.content);
+    const aiResponse = completion.choices[0].message.content;
     const timestamp = new Date().toISOString();
 
-    // Salvar no histórico
-    const chatDir = path.join(
-      __dirname,
-      "..",
-      "data",
-      "users",
-      email,
-      "oracle-chats"
-    );
-    await fs.mkdir(chatDir, { recursive: true });
+    // Carregar histórico existente
+    const history = await loadHistory(email);
 
-    const chatData = {
+    // Adicionar nova interação
+    const newInteraction = {
       timestamp,
       message: message || "Image Analysis",
       hasImage: !!image,
-      response: response,
+      response: aiResponse,
     };
 
-    await fs.writeFile(
-      path.join(chatDir, `${Date.now()}.json`),
-      JSON.stringify(chatData, null, 2)
-    );
+    history.push(newInteraction);
 
+    // Salvar histórico atualizado
+    await saveHistory(email, history);
+
+    // Enviar resposta
     res.json({
-      ...response,
+      response: aiResponse,
       timestamp,
     });
   } catch (error) {
@@ -154,30 +156,14 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
 // Rota de histórico
 router.get("/history/:email", checkOracleAccess, async (req, res) => {
   try {
-    const chatDir = path.join(
-      __dirname,
-      "..",
-      "data",
-      "users",
-      req.params.email,
-      "oracle-chats"
-    );
-    await fs.mkdir(chatDir, { recursive: true });
+    const history = await loadHistory(req.params.email);
 
-    const files = await fs.readdir(chatDir);
-    const chats = await Promise.all(
-      files.map(async (file) => {
-        const content = await fs.readFile(path.join(chatDir, file), "utf8");
-        return JSON.parse(content);
-      })
-    );
-
-    // Ordenar do mais antigo para o mais novo
-    const sortedChats = chats.sort(
+    // Garantir que o histórico está ordenado do mais antigo para o mais novo
+    const sortedHistory = history.sort(
       (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
     );
 
-    res.json(sortedChats);
+    res.json(sortedHistory);
   } catch (error) {
     console.error("History error:", error);
     res.status(500).json({ error: "Failed to fetch chat history" });
