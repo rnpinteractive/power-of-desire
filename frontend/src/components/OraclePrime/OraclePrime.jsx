@@ -66,16 +66,20 @@ const OraclePrime = ({ onClose }) => {
             // Formata a resposta da IA exatamente como no envio
             const aiMsg = {
               content: `Analysis:
-${chat.response.analysis}
+${chat.response.analysis || ""}
 
 Strategic Approach:
-${chat.response.strategy}
+${chat.response.strategy || ""}
 
 Key Triggers:
-${chat.response.triggers.map((t) => `• ${t.type}: ${t.description}`).join("\n")}
+${(chat.response.triggers || [])
+  .map((t) => `• ${t.type}: ${t.description}`)
+  .join("\n")}
 
 ⚠️ Warnings:
-${chat.response.warnings.map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
+${(chat.response.warnings || [])
+  .map((w) => `• ${w.risk}: ${w.impact}`)
+  .join("\n")}`,
               isUser: false,
               timestamp: chat.timestamp,
             };
@@ -156,12 +160,12 @@ ${chat.response.warnings.map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
 
       // Format the response
       const formattedResponse = `Analysis:\n${
-        data.analysis
-      }\n\nStrategic Approach:\n${
-        data.strategy
-      }\n\nKey Triggers:\n${data.triggers
+        data.analysis || ""
+      }\n\nStrategic Approach:\n${data.strategy || ""}\n\nKey Triggers:\n${(
+        data.triggers || []
+      )
         .map((t) => `• ${t.type}: ${t.description}`)
-        .join("\n")}\n\n⚠️ Warnings:\n${data.warnings
+        .join("\n")}\n\n⚠️ Warnings:\n${(data.warnings || [])
         .map((w) => `• ${w.risk}: ${w.impact}`)
         .join("\n")}`;
 

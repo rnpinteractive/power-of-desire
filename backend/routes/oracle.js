@@ -125,11 +125,10 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
       message: message || "Image Analysis",
       hasImage: !!image,
       response: {
-        // Aqui está a resposta correta que o frontend espera
-        analysis: response.analysis,
-        strategy: response.strategy,
-        triggers: response.triggers,
-        warnings: response.warnings,
+        analysis: response.analysis || "",
+        strategy: response.strategy || "",
+        triggers: response.triggers || [],
+        warnings: response.warnings || [],
       },
     };
 
