@@ -120,26 +120,15 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
     );
     await fs.mkdir(chatDir, { recursive: true });
 
-    // Salvando mensagem do usuário e resposta da IA
-    const chatData = [
-      {
-        content: message || "Image Analysis",
-        isUser: true,
-        timestamp,
-        hasImage: !!image,
-      },
-      {
-        content: `Analysis:\n${response.analysis}\n\nStrategic Approach:\n${
-          response.strategy
-        }\n\nKey Triggers:\n${response.triggers
-          .map((t) => `• ${t.type}: ${t.description}`)
-          .join("\n")}\n\n⚠️ Warnings:\n${response.warnings
-          .map((w) => `• ${w.risk}: ${w.impact}`)
-          .join("\n")}`,
-        isUser: false,
+    const chatData = {
+      timestamp,
+      message: message || "Image Analysis",
+      hasImage: !!image,
+      response: {
+        content: response,
         timestamp,
       },
-    ];
+    };
 
     await fs.writeFile(
       path.join(chatDir, `${Date.now()}.json`),
@@ -173,19 +162,19 @@ router.get("/history/:email", checkOracleAccess, async (req, res) => {
     await fs.mkdir(chatDir, { recursive: true });
 
     const files = await fs.readdir(chatDir);
-    const allMessages = await Promise.all(
+    const chats = await Promise.all(
       files.map(async (file) => {
         const content = await fs.readFile(path.join(chatDir, file), "utf8");
         return JSON.parse(content);
       })
     );
 
-    // Flatten e ordena todas as mensagens
-    const messages = allMessages
-      .flat()
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    // Ordenar do mais antigo para o mais novo
+    const sortedChats = chats.sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    );
 
-    res.json(messages);
+    res.json(sortedChats);
   } catch (error) {
     console.error("History error:", error);
     res.status(500).json({ error: "Failed to fetch chat history" });
