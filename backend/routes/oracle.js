@@ -38,7 +38,7 @@ const checkOracleAccess = async (req, res, next) => {
 // Rota de análise
 router.post("/analyze", checkOracleAccess, async (req, res) => {
   try {
-    const { message, image, email } = req.body;
+    const { message, image, email, previousMessages } = req.body;
 
     // Carregar dados do onboarding
     const onboardingPath = path.join(
@@ -51,38 +51,54 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
     );
     const userData = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
 
+    // Cria uma seção de contexto a partir das mensagens anteriores, se houver
+    let contextSection = "";
+    if (
+      previousMessages &&
+      Array.isArray(previousMessages) &&
+      previousMessages.length > 0
+    ) {
+      contextSection =
+        "Previous conversation context:\n" +
+        previousMessages
+          .map((m) => `${m.isUser ? "User" : "Assistant"}: ${m.content}`)
+          .join("\n") +
+        "\n";
+    }
+
     let prompt = `Based on the following user information:
   Objective: ${userData.objective}
   Time Without Contact: ${userData.timeWithoutContact}
   Separation Cause: ${userData.separationCause}
   Current Interest: ${userData.currentInterest}
   Current Status: ${userData.currentStatus}
-  
-  ${
-    image
-      ? "Analyze the provided image, focusing on emotional signals, body language, and relationship dynamics. Then, "
-      : ""
-  }
-  respond naturally as a relationship expert. Consider the user's situation and provide appropriate guidance.
-  ${message ? `The user says: "${message}"` : ""}
-  
-  Return ONLY a VALID JSON OBJECT in this format:
-  {
-    "analysis": "Your conversational response here",
-    "strategy": "Additional context or suggestion if relevant",
-    "triggers": [
-      {
-        "type": "emotional response",
-        "description": "how they might feel"
-      }
-    ],
-    "warnings": [
-      {
-        "risk": "potential concern",
-        "impact": "why to be careful"
-      }
-    ]
-  }`;
+
+${contextSection}
+${
+  image
+    ? "Analyze the provided image, focusing on emotional signals, body language, and relationship dynamics. Then, "
+    : ""
+}
+respond naturally as a relationship expert, taking into account the conversation context above. Consider the user's situation and provide appropriate guidance.
+${message ? `The user says: "${message}"` : ""}
+
+Return ONLY a VALID JSON OBJECT in this format:
+{
+  "analysis": "Your conversational response here",
+  "strategy": "Additional context or suggestion if relevant",
+  "triggers": [
+    {
+      "type": "emotional response",
+      "description": "how they might feel"
+    }
+  ],
+  "warnings": [
+    {
+      "risk": "potential concern",
+      "impact": "why to be careful"
+    }
+  ]
+}`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini-2024-07-18",
