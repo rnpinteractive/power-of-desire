@@ -51,7 +51,7 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
     );
     const userData = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
 
-    // Cria uma seção de contexto a partir das mensagens anteriores, se houver.,.
+    // Cria uma seção de contexto a partir das mensagens anteriores, se houver.
     let contextSection = "";
     if (
       previousMessages &&
@@ -64,6 +64,12 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
           .map((m) => `${m.isUser ? "User" : "Assistant"}: ${m.content}`)
           .join("\n") +
         "\n";
+    }
+
+    // Se uma imagem foi enviada, adiciona uma indicação no prompt
+    let imageIndicator = "";
+    if (image) {
+      imageIndicator = "\n\n[IMAGE PROVIDED FOR ANALYSIS]";
     }
 
     let prompt = `Based on the following user information:
@@ -80,7 +86,7 @@ ${
     : ""
 }
 respond naturally as a relationship expert, taking into account the conversation context above. Consider the user's situation and provide appropriate guidance.
-${message ? `The user says: "${message}"` : ""}
+${message ? `The user says: "${message}"` : ""}${imageIndicator}
 
 Return ONLY a VALID JSON OBJECT in this format:
 {
@@ -100,6 +106,9 @@ Return ONLY a VALID JSON OBJECT in this format:
   ]
 }`;
 
+    // Cria o payload de mensagem com a indicação textual da imagem, se houver
+    const messagePayload = [{ type: "text", text: prompt }];
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini-2024-07-18",
       messages: [
@@ -110,10 +119,7 @@ Return ONLY a VALID JSON OBJECT in this format:
         },
         {
           role: "user",
-          content: [
-            { type: "text", text: prompt },
-            ...(image ? [{ type: "image_url", image_url: image }] : []),
-          ],
+          content: messagePayload,
         },
       ],
       temperature: 0.7,
