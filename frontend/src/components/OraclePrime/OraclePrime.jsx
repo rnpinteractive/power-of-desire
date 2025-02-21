@@ -55,13 +55,13 @@ const OraclePrime = ({ onClose }) => {
           const history = await response.json();
           const loadedMessages = history.flatMap((chat) => [
             {
-              content: chat.message || "Image Analysis",
+              content: chat.userMessage || "Image Analysis",
               isUser: true,
               timestamp: chat.timestamp,
               hasImage: chat.hasImage,
             },
             {
-              content: chat.content,
+              content: chat.aiResponse,
               isUser: false,
               timestamp: chat.timestamp,
             },
@@ -115,46 +115,51 @@ const OraclePrime = ({ onClose }) => {
       if (window.innerWidth < 768) {
         setShowMobileImage(true);
       }
-      processInput(null, base64);
+      await processInput(null, base64);
     } catch (error) {
       console.error("Error processing image:", error);
     }
   };
 
   const processInput = async (text = null, image = null) => {
+    const currentInput = text || input;
+    if (!currentInput && !image) return;
+
+    const userMessage = {
+      content: currentInput || "Image Analysis",
+      isUser: true,
+      timestamp: new Date().toISOString(),
+      hasImage: !!image,
+    };
+
     try {
       setIsProcessing(true);
-      const timestamp = new Date().toISOString();
       setInput("");
-      const userMessage = {
-        content: text || "Image Analysis",
-        isUser: true,
-        timestamp,
-        hasImage: !!image,
-      };
       setMessages((prev) => [...prev, userMessage]);
 
       const response = await api.fetch("/oracle-prime/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: text,
+          message: currentInput,
           image,
           email: user.email,
           previousMessages: messages,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to process request");
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to process request");
       }
 
-      const data = await response.json();
       const aiMessage = {
         content: data.content,
         isUser: false,
         timestamp: data.timestamp,
       };
+
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
       console.error("Error processing input:", error);
@@ -174,9 +179,9 @@ const OraclePrime = ({ onClose }) => {
     }
   };
 
-  const handleSubmit = () => {
-    if (!input.trim()) return;
-    processInput(input.trim());
+  const handleSubmit = async () => {
+    if (!input.trim() || isProcessing) return;
+    await processInput(input.trim());
   };
 
   useEffect(() => {
@@ -258,6 +263,7 @@ const OraclePrime = ({ onClose }) => {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="p-2 text-white/60 hover:text-white hover:bg-[#1c1c1e] rounded-lg transition-colors"
+                  disabled={isProcessing}
                 >
                   <ImagePlus size={20} />
                 </button>
@@ -275,10 +281,11 @@ const OraclePrime = ({ onClose }) => {
                   placeholder="Ask anything..."
                   className="flex-1 bg-[#1c1c1e] rounded-lg px-4 py-2 text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/20"
                   onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
+                  disabled={isProcessing}
                 />
                 <button
                   onClick={handleSubmit}
-                  disabled={isProcessing}
+                  disabled={isProcessing || !input.trim()}
                   className="p-2 text-white/60 hover:text-white hover:bg-[#1c1c1e] rounded-lg transition-colors disabled:opacity-50"
                 >
                   <Send size={20} />

@@ -30,6 +30,7 @@ const checkOracleAccess = async (req, res, next) => {
     req.user = userData;
     next();
   } catch (error) {
+    console.error("Access check error:", error);
     res.status(500).json({ error: "Error checking access" });
   }
 };
@@ -72,7 +73,7 @@ ${
       message ? `User: ${message}` : ""
     }
 
-As a relationship expert, provide a thoughtful and empathetic response considering the user's context and any provided image. Format your response in a clear and organized way, using line breaks and bullet points when appropriate.`;
+As a relationship expert, provide a thoughtful and empathetic response considering the user's context and any provided image. Format your response in a clear and organized way.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini-2024-07-18",
@@ -89,8 +90,6 @@ As a relationship expert, provide a thoughtful and empathetic response consideri
       ],
       temperature: 0.7,
       max_tokens: 1000,
-      presence_penalty: 0.3,
-      frequency_penalty: 0.3,
     });
 
     const aiResponse = completion.choices[0].message.content;
@@ -108,9 +107,9 @@ As a relationship expert, provide a thoughtful and empathetic response consideri
 
     const chatData = {
       timestamp,
-      message: message || "Image Analysis",
+      userMessage: message || "Image Analysis",
       hasImage: !!image,
-      content: aiResponse,
+      aiResponse,
     };
 
     await fs.writeFile(
@@ -119,12 +118,14 @@ As a relationship expert, provide a thoughtful and empathetic response consideri
     );
 
     res.json({
-      content: aiResponse,
+      success: true,
       timestamp,
+      content: aiResponse,
     });
   } catch (error) {
     console.error("Oracle analysis error:", error);
     res.status(500).json({
+      success: false,
       error: "Failed to process analysis",
       details: error.message,
     });
