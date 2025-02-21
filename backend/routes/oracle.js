@@ -66,18 +66,19 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
         "\n";
     }
 
-    // Se uma imagem foi enviada, adiciona uma indicação no prompt
+    // Se uma imagem for fornecida (base64), adiciona um indicador textual
     let imageIndicator = "";
     if (image) {
       imageIndicator = "\n\n[IMAGE PROVIDED FOR ANALYSIS]";
     }
 
+    // Monta o prompt completo com os dados do onboarding, o contexto e a indicação de imagem
     let prompt = `Based on the following user information:
-  Objective: ${userData.objective}
-  Time Without Contact: ${userData.timeWithoutContact}
-  Separation Cause: ${userData.separationCause}
-  Current Interest: ${userData.currentInterest}
-  Current Status: ${userData.currentStatus}
+Objective: ${userData.objective}
+Time Without Contact: ${userData.timeWithoutContact}
+Separation Cause: ${userData.separationCause}
+Current Interest: ${userData.currentInterest}
+Current Status: ${userData.currentStatus}
 
 ${contextSection}
 ${
@@ -85,7 +86,7 @@ ${
     ? "Analyze the provided image, focusing on emotional signals, body language, and relationship dynamics. Then, "
     : ""
 }
-respond naturally as a relationship expert, taking into account the conversation context above. Consider the user's situation and provide appropriate guidance.
+Respond naturally as a relationship expert, taking into account the conversation context above. Consider the user's situation and provide appropriate guidance.
 ${message ? `The user says: "${message}"` : ""}${imageIndicator}
 
 Return ONLY a VALID JSON OBJECT in this format:
@@ -106,9 +107,7 @@ Return ONLY a VALID JSON OBJECT in this format:
   ]
 }`;
 
-    // Cria o payload de mensagem com a indicação textual da imagem, se houver
-    const messagePayload = [{ type: "text", text: prompt }];
-
+    // Envia o prompt como uma única mensagem de texto
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini-2024-07-18",
       messages: [
@@ -119,7 +118,8 @@ Return ONLY a VALID JSON OBJECT in this format:
         },
         {
           role: "user",
-          content: messagePayload,
+          // Enviamos apenas o prompt de texto; a imagem já foi processada no frontend
+          content: prompt,
         },
       ],
       temperature: 0.7,

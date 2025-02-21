@@ -12,29 +12,6 @@ import { UserContext } from "../../App";
 import { api } from "../../services/api";
 import UpgradePrompt from "./UpgradePrompt";
 
-// Função para verificar se a mensagem é trivial (ex: saudações curtas)
-function isTrivialMessage(text) {
-  const trivialGreetings = [
-    "hey",
-    "hi",
-    "hello",
-    "hey man",
-    "oi",
-    "olá",
-    "e aí",
-  ];
-  const lower = text.trim().toLowerCase();
-  // Se a mensagem tiver menos de 10 caracteres ou contiver um dos cumprimentos
-  if (lower.length < 10) return true;
-  return trivialGreetings.some(
-    (greeting) =>
-      lower === greeting ||
-      lower.startsWith(greeting + " ") ||
-      lower.endsWith(" " + greeting) ||
-      lower.includes(greeting)
-  );
-}
-
 const Message = ({ content, isUser, timestamp }) => (
   <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
     <div className="flex flex-col gap-1">
@@ -121,44 +98,47 @@ ${(resp.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
     loadHistory();
   }, [user.email]);
 
+  // Redimensiona e comprime a imagem para evitar payload grande (erro 413)
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
     try {
-      const base64 = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(file);
+      const objectUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.src = objectUrl;
+      await new Promise((resolve) => {
+        img.onload = resolve;
       });
+      // Define tamanho máximo (800x800)
+      const maxWidth = 800;
+      const maxHeight = 800;
+      let { width, height } = img;
+      if (width > maxWidth || height > maxHeight) {
+        const scale = Math.min(maxWidth / width, maxHeight / height);
+        width = width * scale;
+        height = height * scale;
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+      // Compressão para JPEG com qualidade 0.7
+      const base64 = canvas.toDataURL("image/jpeg", 0.7);
+      URL.revokeObjectURL(objectUrl);
       setImagePreview(base64);
       if (window.innerWidth < 768) {
         setShowMobileImage(true);
       }
-      // Se houver imagem, sempre chama o backend para análise
+      // Envia a imagem processada para análise
       processInput(null, base64);
     } catch (error) {
       console.error("Error processing image:", error);
     }
   };
 
+  // Processa todas as mensagens chamando o backend para análise, sem fallback local
   const processInput = async (text = null, image = null) => {
-    // Se for uma mensagem trivial e sem imagem, responda localmente
-    if (text && !image && isTrivialMessage(text)) {
-      const timestamp = new Date().toISOString();
-      const userMsg = {
-        content: text,
-        isUser: true,
-        timestamp,
-      };
-      const aiMsg = {
-        content: "Hi there! Great to hear from you. How can I help you today?",
-        isUser: false,
-        timestamp,
-      };
-      setMessages((prev) => [...prev, userMsg, aiMsg]);
-      return;
-    }
-
     try {
       setIsProcessing(true);
       const timestamp = new Date().toISOString();
@@ -295,7 +275,6 @@ ${(data.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
                   <Message key={index} {...message} />
                 ))
               )}
-
               {isProcessing && !showMobileImage && (
                 <div className="flex items-center gap-2 text-white/60 bg-[#1c1c1e] p-3 rounded-lg w-fit">
                   <Loader className="animate-spin" size={16} />
