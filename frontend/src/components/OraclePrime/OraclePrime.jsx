@@ -1,15 +1,5 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
-import {
-  Brain,
-  Send,
-  Loader,
-  X,
-  ImagePlus,
-  ArrowLeft,
-  Clock,
-  Maximize2,
-  Minimize2,
-} from "lucide-react";
+import { Brain, Send, Loader, X, ImagePlus, Clock } from "lucide-react";
 import { UserContext } from "../../App";
 import { api } from "../../services/api";
 import UpgradePrompt from "./UpgradePrompt";
@@ -22,7 +12,7 @@ const Message = ({ content, isUser, timestamp, hasImage, imageUrl }) => (
       } max-w-[85%]`}
     >
       {hasImage && imageUrl && (
-        <div className="relative w-full mb-2 rounded-xl overflow-hidden">
+        <div className="relative w-full mb-2 rounded-xl overflow-hidden group">
           <img
             src={imageUrl}
             alt="Analysis"
@@ -34,7 +24,9 @@ const Message = ({ content, isUser, timestamp, hasImage, imageUrl }) => (
       )}
       <div
         className={`w-full rounded-xl p-4 whitespace-pre-wrap ${
-          isUser ? "bg-[#2c2c2e] text-white" : "bg-[#1c1c1e] text-white/90"
+          isUser
+            ? "bg-gradient-to-br from-purple-600 to-purple-700 text-white"
+            : "bg-[#1c1c1e] text-white/90"
         }`}
       >
         {content}
@@ -51,13 +43,16 @@ const Message = ({ content, isUser, timestamp, hasImage, imageUrl }) => (
 
 const ImageAnalysisOverlay = ({ image, isProcessing, onClose }) => (
   <div className="fixed inset-0 bg-black/95 z-[70] flex flex-col">
-    <div className="flex items-center justify-between p-4 border-b border-white/10">
+    <div className="flex items-center justify-between p-4 border-b border-white/10 bg-[#1c1c1e]">
       <div className="flex items-center gap-2">
-        <Brain className="text-white/80" size={20} />
-        <span className="text-white font-medium">Visual Analysis</span>
+        <Brain className="text-purple-400" size={20} />
+        <span className="text-white font-medium">Image Analysis</span>
       </div>
-      <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg">
-        <X className="text-white/60" size={20} />
+      <button
+        onClick={onClose}
+        className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+      >
+        <X className="text-white/60 hover:text-white" size={20} />
       </button>
     </div>
     <div className="flex-1 relative">
@@ -68,8 +63,16 @@ const ImageAnalysisOverlay = ({ image, isProcessing, onClose }) => (
       />
       {isProcessing && (
         <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-4">
-          <Loader className="text-white animate-spin" size={32} />
-          <div className="text-white/90 text-lg">Processing analysis...</div>
+          <div className="relative">
+            <div className="absolute inset-0 bg-purple-500/20 rounded-full animate-ping" />
+            <Loader
+              className="text-purple-400 animate-spin relative z-10"
+              size={40}
+            />
+          </div>
+          <div className="text-white text-lg font-medium">
+            Analyzing image...
+          </div>
         </div>
       )}
     </div>
@@ -111,30 +114,47 @@ const OraclePrime = ({ onClose }) => {
   }, [user.email]);
 
   const processImage = async (file) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.src = URL.createObjectURL(file);
-      img.onload = () => {
-        const maxWidth = 800;
-        const maxHeight = 800;
-        let { width, height } = img;
+    return new Promise((resolve, reject) => {
+      if (!file || !file.type.startsWith("image/")) {
+        reject(new Error("Invalid file type"));
+        return;
+      }
 
-        if (width > maxWidth || height > maxHeight) {
-          const scale = Math.min(maxWidth / width, maxHeight / height);
-          width = Math.floor(width * scale);
-          height = Math.floor(height * scale);
-        }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.src = e.target.result;
 
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
+        img.onload = () => {
+          const maxWidth = 1200;
+          const maxHeight = 1200;
+          let { width, height } = img;
 
-        const base64 = canvas.toDataURL("image/jpeg", 0.7);
-        URL.revokeObjectURL(img.src);
-        resolve(base64);
+          if (width > maxWidth || height > maxHeight) {
+            const scale = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.floor(width * scale);
+            height = Math.floor(height * scale);
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+
+          if (!ctx) {
+            reject(new Error("Failed to get canvas context"));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", 0.85));
+        };
+
+        img.onerror = () => reject(new Error("Failed to load image"));
       };
+
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsDataURL(file);
     });
   };
 
@@ -143,12 +163,31 @@ const OraclePrime = ({ onClose }) => {
     if (!file) return;
 
     try {
+      setIsProcessing(true);
       const base64 = await processImage(file);
+
+      if (!base64) {
+        throw new Error("Failed to process image");
+      }
+
       setImagePreview(base64);
       setShowImageAnalysis(true);
+
       await processInput(null, base64);
     } catch (error) {
       console.error("Error processing image:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          content: "Failed to process image. Please try again.",
+          isUser: false,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    } finally {
+      if (!showImageAnalysis) {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -241,10 +280,13 @@ const OraclePrime = ({ onClose }) => {
         <div className="h-full flex flex-col">
           <div className="bg-[#1c1c1e] p-4 flex items-center justify-between shrink-0 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <Brain className="text-white/80" size={24} />
+              <div className="relative">
+                <Brain className="text-purple-400" size={24} />
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full" />
+              </div>
               <div>
                 <h2 className="text-xl font-bold text-white">Oracle Prime</h2>
-                <p className="text-sm text-white/60">Advanced Analysis</p>
+                <p className="text-sm text-purple-400">Advanced Analysis</p>
               </div>
             </div>
             <button
@@ -262,12 +304,20 @@ const OraclePrime = ({ onClose }) => {
           >
             {isLoadingHistory ? (
               <div className="flex items-center justify-center h-full">
-                <Loader className="animate-spin text-white/60" size={24} />
+                <Loader className="animate-spin text-purple-400" size={24} />
               </div>
             ) : messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-white/60">
-                <Brain size={32} className="mb-2" />
-                <p>Start a conversation with Oracle Prime</p>
+                <div className="relative mb-4">
+                  <Brain size={40} className="text-purple-400" />
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                </div>
+                <h3 className="text-xl font-medium text-white mb-2">
+                  Oracle Prime is Ready
+                </h3>
+                <p className="text-white/60 text-center max-w-md">
+                  Start a conversation to receive personalized insights
+                </p>
               </div>
             ) : (
               messages.map((message, index) => (
@@ -275,9 +325,12 @@ const OraclePrime = ({ onClose }) => {
               ))
             )}
             {isProcessing && !showImageAnalysis && (
-              <div className="flex items-center gap-2 text-white/60 bg-[#1c1c1e] p-3 rounded-lg w-fit">
-                <Loader className="animate-spin" size={16} />
-                <span>Processing...</span>
+              <div className="flex items-center gap-3 text-white/60 bg-[#1c1c1e]/80 p-4 rounded-xl w-fit backdrop-blur-sm">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-purple-500/20 rounded-full animate-ping" />
+                  <Loader className="animate-spin relative z-10" size={16} />
+                </div>
+                <span>Processing your request...</span>
               </div>
             )}
           </div>
@@ -305,8 +358,8 @@ const OraclePrime = ({ onClose }) => {
                   onChange={(e) => setInput(e.target.value)}
                   onFocus={() => setIsInputFocused(true)}
                   onBlur={() => setIsInputFocused(false)}
-                  placeholder="Ask anything..."
-                  className="w-full bg-black/50 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/20 resize-none"
+                  placeholder="Ask Oracle Prime anything..."
+                  className="w-full bg-black/50 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none"
                   style={{
                     minHeight: "44px",
                     maxHeight: "120px",
@@ -324,7 +377,11 @@ const OraclePrime = ({ onClose }) => {
               <button
                 onClick={handleSubmit}
                 disabled={isProcessing || !input.trim()}
-                className="p-2 text-white/60 hover:text-white hover:bg-[#1c1c1e] rounded-lg transition-colors shrink-0 disabled:opacity-50"
+                className={`p-3 rounded-xl transition-all duration-300 shrink-0 ${
+                  input.trim()
+                    ? "bg-purple-600 hover:bg-purple-500 text-white"
+                    : "bg-white/5 text-white/40"
+                }`}
               >
                 <Send size={20} />
               </button>
