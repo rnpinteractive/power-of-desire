@@ -7,16 +7,28 @@ import {
   ImagePlus,
   ArrowLeft,
   Clock,
+  ChevronDown,
 } from "lucide-react";
 import { UserContext } from "../../App";
 import { api } from "../../services/api";
 import UpgradePrompt from "./UpgradePrompt";
 
-const Message = ({ content, isUser, timestamp }) => (
+const Message = ({ content, isUser, timestamp, hasImage, imageUrl }) => (
   <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
-    <div className="flex flex-col gap-1">
+    <div className={`flex flex-col gap-1 ${isUser ? "items-end" : "items-start"} max-w-[85%]`}>
+      {hasImage && imageUrl && (
+        <div className="relative w-full mb-2 rounded-lg overflow-hidden">
+          <img
+            src={imageUrl}
+            alt="Analysis"
+            className="w-full object-cover rounded-lg"
+            style={{ maxHeight: "200px" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/60" />
+        </div>
+      )}
       <div
-        className={`max-w-[85%] rounded-xl p-4 whitespace-pre-wrap ${
+        className={`w-full rounded-xl p-4 whitespace-pre-wrap ${
           isUser ? "bg-[#2c2c2e] text-white" : "bg-[#1c1c1e] text-white/90"
         }`}
       >
@@ -32,16 +44,41 @@ const Message = ({ content, isUser, timestamp }) => (
   </div>
 );
 
+const ImageAnalysisOverlay = ({ image, isProcessing, onClose }) => (
+  <div className="fixed inset-0 bg-black/90 z-50 flex flex-col">
+    <div className="flex items-center justify-between p-4 border-b border-white/10">
+      <div className="flex items-center gap-2">
+        <Brain className="text-white/80" size={20} />
+        <span className="text-white font-medium">Image Analysis</span>
+      </div>
+      <button onClick={onClose} className="p-2">
+        <X className="text-white/60" size={20} />
+      </button>
+    </div>
+    <div className="flex-1 relative">
+      <img src={image} alt="Analysis" className="w-full h-full object-contain" />
+      {isProcessing && (
+        <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-4">
+          <Loader className="text-white animate-spin" size={32} />
+          <div className="text-white/80 text-sm">Analyzing image...</div>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
 const OraclePrime = ({ onClose }) => {
   const { user } = useContext(UserContext);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
-  const [showMobileImage, setShowMobileImage] = useState(false);
+  const [showImageAnalysis, setShowImageAnalysis] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const fileInputRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const inputRef = useRef(null);
 
   if (!user?.oraclePrime?.isActive) {
     return <UpgradePrompt onClose={onClose} />;
@@ -64,8 +101,8 @@ const OraclePrime = ({ onClose }) => {
     loadHistory();
   }, [user.email]);
 
-  const processImage = (file) => {
-    return new Promise((resolve) => {
+  const processImage = async (file) => {
+    const base64 = await new Promise((resolve) => {
       const img = new Image();
       img.src = URL.createObjectURL(file);
       img.onload = () => {
@@ -90,6 +127,8 @@ const OraclePrime = ({ onClose }) => {
         resolve(base64);
       };
     });
+
+    return base64;
   };
 
   const handleFileUpload = async (event) => {
@@ -99,9 +138,7 @@ const OraclePrime = ({ onClose }) => {
     try {
       const base64 = await processImage(file);
       setImagePreview(base64);
-      if (window.innerWidth < 768) {
-        setShowMobileImage(true);
-      }
+      setShowImageAnalysis(true);
       await processInput(null, base64);
     } catch (error) {
       console.error("Error processing image:", error);
@@ -118,6 +155,7 @@ const OraclePrime = ({ onClose }) => {
       isUser: true,
       timestamp,
       hasImage: !!image,
+      imageUrl: image,
     };
 
     try {
@@ -161,9 +199,7 @@ const OraclePrime = ({ onClose }) => {
       ]);
     } finally {
       setIsProcessing(false);
-      if (window.innerWidth < 768) {
-        setShowMobileImage(false);
-      }
+      setShowImageAnalysis(false);
     }
   };
 
@@ -174,15 +210,26 @@ const OraclePrime = ({ onClose }) => {
 
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop =
-        chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
+  // Handle viewport adjustments for mobile keyboards
+  useEffect(() => {
+    const handleResize = () => {
+      if (isInputFocused && window.innerWidth < 768) {
+        window.scrollTo(0, document.body.scrollHeight);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isInputFocused]);
+
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-lg flex md:items-center justify-center z-50">
-      <div className="w-full h-full md:h-auto md:max-h-[80vh] md:max-w-4xl bg-black md:rounded-2xl shadow-2xl overflow-hidden">
-        <div className="bg-[#1c1c1e] p-4 flex items-center justify-between">
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-lg flex md:items-center justify-center z-40">
+      <div className="w-full h-full md:h-auto md:max-h-[80vh] md:max-w-4xl bg-black md:rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+        <div className="bg-[#1c1c1e] p-4 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <Brain className="text-white/80" size={24} />
             <div>
@@ -198,32 +245,13 @@ const OraclePrime = ({ onClose }) => {
           </button>
         </div>
 
-        {showMobileImage && imagePreview && (
-          <div className="md:hidden">
-            <div className="relative h-48">
-              <img
-                src={imagePreview}
-                alt="Analysis"
-                className="w-full h-full object-cover"
-              />
-              <button
-                onClick={() => setShowMobileImage(false)}
-                className="absolute top-2 left-2 p-2 bg-black/50 rounded-lg"
-              >
-                <ArrowLeft className="text-white" size={20} />
-              </button>
-              {isProcessing && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <Loader className="text-white animate-spin" size={32} />
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className="h-[calc(100%-64px)] md:h-[600px] flex">
+        <div className="flex-1 flex overflow-hidden">
           <div className="flex-1 flex flex-col">
-            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4">
+            <div 
+              ref={chatContainerRef}
+              className="flex-1 overflow-y-auto p-4 scroll-smooth"
+              style={{ scrollBehavior: 'smooth' }}
+            >
               {isLoadingHistory ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader className="animate-spin text-white/60" size={24} />
@@ -238,7 +266,7 @@ const OraclePrime = ({ onClose }) => {
                   <Message key={index} {...message} />
                 ))
               )}
-              {isProcessing && !showMobileImage && (
+              {isProcessing && !showImageAnalysis && (
                 <div className="flex items-center gap-2 text-white/60 bg-[#1c1c1e] p-3 rounded-lg w-fit">
                   <Loader className="animate-spin" size={16} />
                   <span>Analyzing...</span>
@@ -246,11 +274,11 @@ const OraclePrime = ({ onClose }) => {
               )}
             </div>
 
-            <div className="p-4 border-t border-white/10">
-              <div className="flex gap-2">
+            <div className="p-4 border-t border-white/10 bg-black">
+              <div className="flex gap-2 items-end max-w-full">
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-2 text-white/60 hover:text-white hover:bg-[#1c1c1e] rounded-lg transition-colors"
+                  className="p-2 text-white/60 hover:text-white hover:bg-[#1c1c1e] rounded-lg transition-colors shrink-0"
                   disabled={isProcessing}
                 >
                   <ImagePlus size={20} />
@@ -262,19 +290,33 @@ const OraclePrime = ({ onClose }) => {
                   accept="image/*"
                   className="hidden"
                 />
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask anything..."
-                  className="flex-1 bg-[#1c1c1e] rounded-lg px-4 py-2 text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/20"
-                  onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
-                  disabled={isProcessing}
-                />
+                <div className="flex-1 min-w-0">
+                  <textarea
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onFocus={() => setIsInputFocused(true)}
+                    onBlur={() => setIsInputFocused(false)}
+                    placeholder="Ask anything..."
+                    className="w-full bg-[#1c1c1e] rounded-lg px-4 py-2 text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/20 resize-none"
+                    style={{
+                      minHeight: '44px',
+                      maxHeight: '120px',
+                    }}
+                    rows={1}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSubmit();
+                      }
+                    }}
+                    disabled={isProcessing}
+                  />
+                </div>
                 <button
                   onClick={handleSubmit}
                   disabled={isProcessing || !input.trim()}
-                  className="p-2 text-white/60 hover:text-white hover:bg-[#1c1c1e] rounded-lg transition-colors disabled:opacity-50"
+                  className="p-2 text-white/60 hover:text-white hover:bg-[#1c1c1e] rounded-lg transition-colors disabled:opacity-50 shrink-0"
                 >
                   <Send size={20} />
                 </button>
@@ -282,7 +324,7 @@ const OraclePrime = ({ onClose }) => {
             </div>
           </div>
 
-          {imagePreview && !showMobileImage && (
+          {imagePreview && !showImageAnalysis && (
             <div className="hidden md:block w-72 border-l border-white/10 p-4">
               <div className="h-full flex flex-col">
                 <h3 className="text-white font-medium mb-3">Visual Analysis</h3>
@@ -303,6 +345,14 @@ const OraclePrime = ({ onClose }) => {
           )}
         </div>
       </div>
+
+      {showImageAnalysis && (
+        <ImageAnalysisOverlay
+          image={imagePreview}
+          isProcessing={isProcessing}
+          onClose={() => setShowImageAnalysis(false)}
+        />
+      )}
     </div>
   );
 };
