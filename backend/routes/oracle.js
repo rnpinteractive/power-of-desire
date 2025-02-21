@@ -52,57 +52,62 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
     let conversationContext = "";
     if (!image && previousMessages?.length > 0) {
       conversationContext = previousMessages
+        .slice(-3)
         .map((m) => `${m.isUser ? "User" : "Assistant"}: ${m.content}`)
         .join("\n\n");
     }
 
-    const userContext = `User Context:
-• Objective: ${userData.objective}
-• Time Without Contact: ${userData.timeWithoutContact}
-• Separation Cause: ${userData.separationCause}
-• Current Interest: ${userData.currentInterest}
-• Current Status: ${userData.currentStatus}`;
+    const userContext = `Relationship Context:
+• Current Goal: ${userData.objective}
+• Time Apart: ${userData.timeWithoutContact}
+• Separation Reason: ${userData.separationCause}
+• Interest Level: ${userData.currentInterest}
+• Current Dynamic: ${userData.currentStatus}`;
 
-    // Prompt especializado para análise de imagem ou conversa normal
-    const imageAnalysisPrompt = `${userContext}
+    const messageAnalysisPrompt = `${userContext}
 
-[IMAGE CONTENT FOR ANALYSIS]
+[CONVERSATION CONTENT FOR ANALYSIS]
 
-As an expert relationship advisor, analyze the provided content (which may be a conversation screenshot, message history, or other communication evidence):
+Examine the provided conversation content with strategic precision:
 
-1. Content Analysis:
-   - Identify the key messages and their meaning
-   - Analyze tone, timing, and response patterns
-   - Evaluate communication style and emotional undertones
+1. Message Dynamics:
+- Emotional undertones and intensity levels
+- Power dynamics and resistance patterns
+- Communication style and response patterns
+- Critical turning points in dialogue
 
-2. Context Interpretation:
-   - How does this content relate to the current situation
-   - What insights can be drawn about both parties' positions
-   - Any notable patterns or changes in communication
+2. Behavioral Analysis:
+- Clear communication boundaries
+- Emotional investment indicators
+- Resistance and receptivity signals
+- Strategic positioning of both parties
 
-3. Strategic Assessment:
-   - Opportunities for improving communication
-   - Potential risks or concerns to address
-   - Signs of progress or areas needing attention
+3. Strategic Implications:
+- Current stage of detachment/attachment
+- Windows of opportunity or closure
+- Risk assessment for further action
+- Optimal response strategies
 
 ${
   message
-    ? `Additional context: ${message}
+    ? `Additional Context: ${message}
 
-Based on this specific content and context, provide expert analysis and strategic guidance for moving forward.`
-    : "Provide detailed analysis and actionable recommendations based on this evidence."
+Based on this exact exchange, provide precise strategic analysis and actionable next steps.`
+    : "Deliver specific insights and concrete action steps based on this exact conversation."
 }`;
 
     const standardPrompt = `${userContext}
 
-${
-  conversationContext
-    ? `Previous conversation:\n${conversationContext}\n\n`
-    : ""
-}
-User: ${message}
+${conversationContext ? `Recent Interaction:\n${conversationContext}\n\n` : ""}
+Current Situation: ${message}
 
-As a relationship expert, provide a thoughtful and empathetic response considering the user's context. Format your response in a clear and organized way.`;
+Analyze the current dynamics and provide strategic guidance that addresses:
+1. Immediate action steps
+2. Risk mitigation strategies
+3. Optimal communication approaches
+4. Clear progress indicators
+
+Structure the response with actionable precision.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini-2024-07-18",
@@ -110,11 +115,11 @@ As a relationship expert, provide a thoughtful and empathetic response consideri
         {
           role: "system",
           content:
-            "You are an empathetic relationship expert providing guidance based on the user's specific situation. When analyzing images of conversations or messages, focus on the actual content and communication patterns shown, not general relationship dynamics.",
+            "You are a strategic relationship expert specializing in reconnection dynamics and complex separations. Provide precise, actionable analysis based on actual evidence and specific situations presented. Focus on concrete details and strategic implications, avoiding theoretical frameworks or generic advice. Every response must be tailored to the exact situation shown.",
         },
         {
           role: "user",
-          content: image ? imageAnalysisPrompt : standardPrompt,
+          content: image ? messageAnalysisPrompt : standardPrompt,
         },
       ],
       temperature: 0.7,
@@ -138,7 +143,7 @@ As a relationship expert, provide a thoughtful and empathetic response consideri
       timestamp,
       messages: [
         {
-          content: message || "Image Analysis",
+          content: message || "Conversation Analysis",
           isUser: true,
           hasImage: !!image,
         },
