@@ -50,7 +50,8 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
     const userData = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
 
     let conversationContext = "";
-    if (previousMessages?.length > 0) {
+    if (!image && previousMessages?.length > 0) {
+      // Se não for análise de imagem, mantém contexto da conversa
       conversationContext = previousMessages
         .map((m) => `${m.isUser ? "User" : "Assistant"}: ${m.content}`)
         .join("\n\n");
@@ -63,17 +64,31 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
 • Current Interest: ${userData.currentInterest}
 • Current Status: ${userData.currentStatus}`;
 
-    const prompt = `${userContext}
+    // Prompt otimizado baseado no tipo de análise
+    const basePrompt = image
+      ? `${userContext}
+
+[IMAGE PROVIDED FOR ANALYSIS]
+
+Analyze this image independently, providing detailed insights about:
+1. The communication patterns and context shown
+2. Key elements and their significance
+3. Relevant relationship dynamics observed
+4. Specific recommendations based on the visual evidence
+
+${message ? `Additional context provided: ${message}` : ""}
+
+Provide a structured analysis that offers clear, actionable insights.`
+      : `${userContext}
 
 ${
   conversationContext
     ? `Previous conversation:\n${conversationContext}\n\n`
     : ""
-}${image ? "[IMAGE PROVIDED FOR ANALYSIS]\n\n" : ""}${
-      message ? `User: ${message}` : ""
-    }
+}
+User: ${message}
 
-As a relationship expert, provide a thoughtful and empathetic response considering the user's context and any provided image. Format your response in a clear and organized way.`;
+As a relationship expert, provide a thoughtful and empathetic response considering the user's context. Format your response in a clear and organized way.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini-2024-07-18",
@@ -85,7 +100,7 @@ As a relationship expert, provide a thoughtful and empathetic response consideri
         },
         {
           role: "user",
-          content: prompt,
+          content: basePrompt,
         },
       ],
       temperature: 0.7,
@@ -105,7 +120,6 @@ As a relationship expert, provide a thoughtful and empathetic response consideri
     );
     await fs.mkdir(chatDir, { recursive: true });
 
-    // Save messages separately in the history
     const chatHistory = {
       timestamp,
       messages: [
@@ -161,7 +175,6 @@ router.get("/history/:email", checkOracleAccess, async (req, res) => {
       })
     );
 
-    // Sort and flatten the messages
     const messages = chats
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
       .flatMap((chat) =>
