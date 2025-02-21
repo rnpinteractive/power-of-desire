@@ -53,20 +53,7 @@ const OraclePrime = ({ onClose }) => {
         const response = await api.fetch(`/oracle-prime/history/${user.email}`);
         if (response.ok) {
           const history = await response.json();
-          const loadedMessages = history.flatMap((chat) => [
-            {
-              content: chat.userMessage || "Image Analysis",
-              isUser: true,
-              timestamp: chat.timestamp,
-              hasImage: chat.hasImage,
-            },
-            {
-              content: chat.aiResponse,
-              isUser: false,
-              timestamp: chat.timestamp,
-            },
-          ]);
-          setMessages(loadedMessages);
+          setMessages(history);
         }
       } catch (error) {
         console.error("Error loading chat history:", error);
@@ -125,10 +112,11 @@ const OraclePrime = ({ onClose }) => {
     const currentInput = text || input;
     if (!currentInput && !image) return;
 
+    const timestamp = new Date().toISOString();
     const userMessage = {
       content: currentInput || "Image Analysis",
       isUser: true,
-      timestamp: new Date().toISOString(),
+      timestamp,
       hasImage: !!image,
     };
 

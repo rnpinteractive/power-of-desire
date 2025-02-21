@@ -105,22 +105,31 @@ As a relationship expert, provide a thoughtful and empathetic response consideri
     );
     await fs.mkdir(chatDir, { recursive: true });
 
-    const chatData = {
+    // Save messages separately in the history
+    const chatHistory = {
       timestamp,
-      userMessage: message || "Image Analysis",
-      hasImage: !!image,
-      aiResponse,
+      messages: [
+        {
+          content: message || "Image Analysis",
+          isUser: true,
+          hasImage: !!image,
+        },
+        {
+          content: aiResponse,
+          isUser: false,
+        },
+      ],
     };
 
     await fs.writeFile(
       path.join(chatDir, `${Date.now()}.json`),
-      JSON.stringify(chatData, null, 2)
+      JSON.stringify(chatHistory, null, 2)
     );
 
     res.json({
       success: true,
-      timestamp,
       content: aiResponse,
+      timestamp,
     });
   } catch (error) {
     console.error("Oracle analysis error:", error);
@@ -152,11 +161,17 @@ router.get("/history/:email", checkOracleAccess, async (req, res) => {
       })
     );
 
-    const sortedChats = chats.sort(
-      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-    );
+    // Sort and flatten the messages
+    const messages = chats
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      .flatMap((chat) =>
+        chat.messages.map((msg) => ({
+          ...msg,
+          timestamp: chat.timestamp,
+        }))
+      );
 
-    res.json(sortedChats);
+    res.json(messages);
   } catch (error) {
     console.error("History error:", error);
     res.status(500).json({ error: "Failed to fetch chat history" });
