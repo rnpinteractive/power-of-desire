@@ -12,6 +12,29 @@ import { UserContext } from "../../App";
 import { api } from "../../services/api";
 import UpgradePrompt from "./UpgradePrompt";
 
+// Função para verificar se a mensagem é trivial (ex: saudações curtas)
+function isTrivialMessage(text) {
+  const trivialGreetings = [
+    "hey",
+    "hi",
+    "hello",
+    "hey man",
+    "oi",
+    "olá",
+    "e aí",
+  ];
+  const lower = text.trim().toLowerCase();
+  // Se a mensagem tiver menos de 10 caracteres ou contiver um dos cumprimentos
+  if (lower.length < 10) return true;
+  return trivialGreetings.some(
+    (greeting) =>
+      lower === greeting ||
+      lower.startsWith(greeting + " ") ||
+      lower.endsWith(" " + greeting) ||
+      lower.includes(greeting)
+  );
+}
+
 const Message = ({ content, isUser, timestamp }) => (
   <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
     <div className="flex flex-col gap-1">
@@ -43,35 +66,30 @@ const OraclePrime = ({ onClose }) => {
   const fileInputRef = useRef(null);
   const chatContainerRef = useRef(null);
 
-  // Verifica se o usuário tem acesso
   if (!user?.oraclePrime?.isActive) {
     return <UpgradePrompt onClose={onClose} />;
   }
 
-  // Carrega histórico ao montar e transforma cada chat em 2 mensagens (usuário e IA)
+  // Carrega histórico ao montar
   useEffect(() => {
     const loadHistory = async () => {
       try {
         const response = await api.fetch(`/oracle-prime/history/${user.email}`);
         if (response.ok) {
           const history = await response.json();
-          // Para cada arquivo salvo, criamos 2 mensagens: uma do usuário e outra da IA
           const loadedMessages = history.flatMap((chat) => {
-            // Caso o objeto response não exista (chats antigos), define valores padrão
             const resp = chat.response || {
               analysis: "",
               strategy: "",
               triggers: [],
               warnings: [],
             };
-
             const userMsg = {
               content: chat.message || "Image Analysis",
               isUser: true,
               timestamp: chat.timestamp,
               hasImage: chat.hasImage,
             };
-
             const aiMsg = {
               content: `Analysis:
 ${resp.analysis || ""}
@@ -87,10 +105,8 @@ ${(resp.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
               isUser: false,
               timestamp: chat.timestamp,
             };
-
             return [userMsg, aiMsg];
           });
-          // Ordena cronologicamente (mais antigo para o mais recente)
           loadedMessages.sort(
             (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
           );
@@ -102,26 +118,23 @@ ${(resp.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
         setIsLoadingHistory(false);
       }
     };
-
     loadHistory();
   }, [user.email]);
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
     try {
       const base64 = await new Promise((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result);
         reader.readAsDataURL(file);
       });
-
       setImagePreview(base64);
       if (window.innerWidth < 768) {
         setShowMobileImage(true);
       }
-      // Limpa o input e processa a imagem
+      // Se houver imagem, sempre chama o backend para análise
       processInput(null, base64);
     } catch (error) {
       console.error("Error processing image:", error);
@@ -129,23 +142,34 @@ ${(resp.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
   };
 
   const processInput = async (text = null, image = null) => {
+    // Se for uma mensagem trivial e sem imagem, responda localmente
+    if (text && !image && isTrivialMessage(text)) {
+      const timestamp = new Date().toISOString();
+      const userMsg = {
+        content: text,
+        isUser: true,
+        timestamp,
+      };
+      const aiMsg = {
+        content: "Hi there! Great to hear from you. How can I help you today?",
+        isUser: false,
+        timestamp,
+      };
+      setMessages((prev) => [...prev, userMsg, aiMsg]);
+      return;
+    }
+
     try {
       setIsProcessing(true);
       const timestamp = new Date().toISOString();
-
-      // Limpa o input imediatamente após iniciar o processamento
       setInput("");
-
-      // Adiciona a mensagem do usuário ao chat
       const userMessage = {
         content: text || "Image Analysis",
         isUser: true,
         timestamp,
         hasImage: !!image,
       };
-
       setMessages((prev) => [...prev, userMessage]);
-
       const response = await api.fetch("/oracle-prime/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -153,17 +177,13 @@ ${(resp.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
           message: text,
           image,
           email: user.email,
-          previousMessages: messages, // Envia o contexto do chat
+          previousMessages: messages,
         }),
       });
-
       if (!response.ok) {
         throw new Error("Failed to process request");
       }
-
       const data = await response.json();
-
-      // Formata a resposta
       const formattedResponse = `Analysis:
 ${data.analysis || ""}
 
@@ -175,14 +195,11 @@ ${(data.triggers || []).map((t) => `• ${t.type}: ${t.description}`).join("\n")
 
 ⚠️ Warnings:
 ${(data.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
-
-      // Adiciona a resposta da IA ao chat
       const aiMessage = {
         content: formattedResponse,
         isUser: false,
         timestamp: data.timestamp || new Date().toISOString(),
       };
-
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
       setMessages((prev) => [
@@ -208,7 +225,6 @@ ${(data.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
     processInput(userInput);
   };
 
-  // Auto-scroll do chat
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop =
