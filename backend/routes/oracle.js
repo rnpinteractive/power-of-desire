@@ -51,7 +51,6 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
 
     let conversationContext = "";
     if (!image && previousMessages?.length > 0) {
-      // Se não for análise de imagem, mantém contexto da conversa
       conversationContext = previousMessages
         .map((m) => `${m.isUser ? "User" : "Assistant"}: ${m.content}`)
         .join("\n\n");
@@ -64,22 +63,37 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
 • Current Interest: ${userData.currentInterest}
 • Current Status: ${userData.currentStatus}`;
 
-    // Prompt otimizado baseado no tipo de análise
-    const basePrompt = image
-      ? `${userContext}
+    // Prompt especializado para análise de imagem ou conversa normal
+    const imageAnalysisPrompt = `${userContext}
 
-[IMAGE PROVIDED FOR ANALYSIS]
+[IMAGE CONTENT FOR ANALYSIS]
 
-Analyze this image independently, providing detailed insights about:
-1. The communication patterns and context shown
-2. Key elements and their significance
-3. Relevant relationship dynamics observed
-4. Specific recommendations based on the visual evidence
+As an expert relationship advisor, analyze the provided content (which may be a conversation screenshot, message history, or other communication evidence):
 
-${message ? `Additional context provided: ${message}` : ""}
+1. Content Analysis:
+   - Identify the key messages and their meaning
+   - Analyze tone, timing, and response patterns
+   - Evaluate communication style and emotional undertones
 
-Provide a structured analysis that offers clear, actionable insights.`
-      : `${userContext}
+2. Context Interpretation:
+   - How does this content relate to the current situation
+   - What insights can be drawn about both parties' positions
+   - Any notable patterns or changes in communication
+
+3. Strategic Assessment:
+   - Opportunities for improving communication
+   - Potential risks or concerns to address
+   - Signs of progress or areas needing attention
+
+${
+  message
+    ? `Additional context: ${message}
+
+Based on this specific content and context, provide expert analysis and strategic guidance for moving forward.`
+    : "Provide detailed analysis and actionable recommendations based on this evidence."
+}`;
+
+    const standardPrompt = `${userContext}
 
 ${
   conversationContext
@@ -96,11 +110,11 @@ As a relationship expert, provide a thoughtful and empathetic response consideri
         {
           role: "system",
           content:
-            "You are an empathetic relationship expert providing guidance based on the user's specific situation.",
+            "You are an empathetic relationship expert providing guidance based on the user's specific situation. When analyzing images of conversations or messages, focus on the actual content and communication patterns shown, not general relationship dynamics.",
         },
         {
           role: "user",
-          content: basePrompt,
+          content: image ? imageAnalysisPrompt : standardPrompt,
         },
       ],
       temperature: 0.7,
