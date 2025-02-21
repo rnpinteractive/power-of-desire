@@ -120,14 +120,24 @@ const OraclePrime = ({ onClose }) => {
         return;
       }
 
+      // Validação de tamanho antes do processamento
+      if (file.size > 5 * 1024 * 1024) {
+        // 5MB
+        reject(
+          new Error("Image size too large. Please select an image under 5MB.")
+        );
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = new Image();
         img.src = e.target.result;
 
         img.onload = () => {
-          const maxWidth = 1200;
-          const maxHeight = 1200;
+          // Reduzindo dimensões máximas
+          const maxWidth = 800;
+          const maxHeight = 800;
           let { width, height } = img;
 
           if (width > maxWidth || height > maxHeight) {
@@ -147,7 +157,27 @@ const OraclePrime = ({ onClose }) => {
           }
 
           ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL("image/jpeg", 0.85));
+
+          // Compressão progressiva
+          let quality = 0.7;
+          let base64 = canvas.toDataURL("image/jpeg", quality);
+
+          // Reduz qualidade até atingir tamanho aceitável
+          while (base64.length > 1024 * 1024 && quality > 0.1) {
+            quality -= 0.1;
+            base64 = canvas.toDataURL("image/jpeg", quality);
+          }
+
+          if (base64.length > 1024 * 1024) {
+            reject(
+              new Error(
+                "Unable to compress image sufficiently. Please try a smaller image."
+              )
+            );
+            return;
+          }
+
+          resolve(base64);
         };
 
         img.onerror = () => reject(new Error("Failed to load image"));
