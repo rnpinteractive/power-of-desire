@@ -72,7 +72,7 @@ ${
       message ? `User: ${message}` : ""
     }
 
-As a relationship expert, provide a thoughtful and empathetic response considering the user's context and any provided image. Format your response in a clear and organized way.`;
+As a relationship expert, provide a thoughtful and empathetic response considering the user's context and any provided image. Format your response in a clear and organized way, using line breaks and bullet points when appropriate.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini-2024-07-18",
@@ -93,7 +93,7 @@ As a relationship expert, provide a thoughtful and empathetic response consideri
       frequency_penalty: 0.3,
     });
 
-    const response = completion.choices[0].message.content;
+    const aiResponse = completion.choices[0].message.content;
     const timestamp = new Date().toISOString();
 
     const chatDir = path.join(
@@ -110,7 +110,7 @@ As a relationship expert, provide a thoughtful and empathetic response consideri
       timestamp,
       message: message || "Image Analysis",
       hasImage: !!image,
-      response,
+      content: aiResponse,
     };
 
     await fs.writeFile(
@@ -119,7 +119,7 @@ As a relationship expert, provide a thoughtful and empathetic response consideri
     );
 
     res.json({
-      response,
+      content: aiResponse,
       timestamp,
     });
   } catch (error) {

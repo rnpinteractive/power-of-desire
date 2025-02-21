@@ -16,7 +16,7 @@ const Message = ({ content, isUser, timestamp }) => (
   <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
     <div className="flex flex-col gap-1">
       <div
-        className={`max-w-[85%] rounded-xl p-4 ${
+        className={`max-w-[85%] rounded-xl p-4 whitespace-pre-wrap ${
           isUser ? "bg-[#2c2c2e] text-white" : "bg-[#1c1c1e] text-white/90"
         }`}
       >
@@ -61,7 +61,7 @@ const OraclePrime = ({ onClose }) => {
               hasImage: chat.hasImage,
             },
             {
-              content: chat.response,
+              content: chat.content,
               isUser: false,
               timestamp: chat.timestamp,
             },
@@ -151,7 +151,7 @@ const OraclePrime = ({ onClose }) => {
 
       const data = await response.json();
       const aiMessage = {
-        content: data.response,
+        content: data.content,
         isUser: false,
         timestamp: data.timestamp,
       };
