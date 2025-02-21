@@ -7,7 +7,8 @@ import {
   ImagePlus,
   ArrowLeft,
   Clock,
-  ChevronDown,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { UserContext } from "../../App";
 import { api } from "../../services/api";
@@ -15,13 +16,17 @@ import UpgradePrompt from "./UpgradePrompt";
 
 const Message = ({ content, isUser, timestamp, hasImage, imageUrl }) => (
   <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
-    <div className={`flex flex-col gap-1 ${isUser ? "items-end" : "items-start"} max-w-[85%]`}>
+    <div
+      className={`flex flex-col gap-1 ${
+        isUser ? "items-end" : "items-start"
+      } max-w-[85%]`}
+    >
       {hasImage && imageUrl && (
-        <div className="relative w-full mb-2 rounded-lg overflow-hidden">
+        <div className="relative w-full mb-2 rounded-xl overflow-hidden">
           <img
             src={imageUrl}
             alt="Analysis"
-            className="w-full object-cover rounded-lg"
+            className="w-full object-cover rounded-xl"
             style={{ maxHeight: "200px" }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/60" />
@@ -45,22 +50,26 @@ const Message = ({ content, isUser, timestamp, hasImage, imageUrl }) => (
 );
 
 const ImageAnalysisOverlay = ({ image, isProcessing, onClose }) => (
-  <div className="fixed inset-0 bg-black/90 z-50 flex flex-col">
+  <div className="fixed inset-0 bg-black/95 z-[70] flex flex-col">
     <div className="flex items-center justify-between p-4 border-b border-white/10">
       <div className="flex items-center gap-2">
         <Brain className="text-white/80" size={20} />
-        <span className="text-white font-medium">Image Analysis</span>
+        <span className="text-white font-medium">Visual Analysis</span>
       </div>
-      <button onClick={onClose} className="p-2">
+      <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg">
         <X className="text-white/60" size={20} />
       </button>
     </div>
     <div className="flex-1 relative">
-      <img src={image} alt="Analysis" className="w-full h-full object-contain" />
+      <img
+        src={image}
+        alt="Analysis"
+        className="w-full h-full object-contain"
+      />
       {isProcessing && (
-        <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-4">
+        <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-4">
           <Loader className="text-white animate-spin" size={32} />
-          <div className="text-white/80 text-sm">Analyzing image...</div>
+          <div className="text-white/90 text-lg">Processing analysis...</div>
         </div>
       )}
     </div>
@@ -102,7 +111,7 @@ const OraclePrime = ({ onClose }) => {
   }, [user.email]);
 
   const processImage = async (file) => {
-    const base64 = await new Promise((resolve) => {
+    return new Promise((resolve) => {
       const img = new Image();
       img.src = URL.createObjectURL(file);
       img.onload = () => {
@@ -127,8 +136,6 @@ const OraclePrime = ({ onClose }) => {
         resolve(base64);
       };
     });
-
-    return base64;
   };
 
   const handleFileUpload = async (event) => {
@@ -210,11 +217,11 @@ const OraclePrime = ({ onClose }) => {
 
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Handle viewport adjustments for mobile keyboards
   useEffect(() => {
     const handleResize = () => {
       if (isInputFocused && window.innerWidth < 768) {
@@ -222,127 +229,107 @@ const OraclePrime = ({ onClose }) => {
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [isInputFocused]);
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-lg flex md:items-center justify-center z-40">
-      <div className="w-full h-full md:h-auto md:max-h-[80vh] md:max-w-4xl bg-black md:rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-        <div className="bg-[#1c1c1e] p-4 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <Brain className="text-white/80" size={24} />
-            <div>
-              <h2 className="text-xl font-bold text-white">Oracle Prime</h2>
-              <p className="text-sm text-white/60">Advanced Analysis</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <X className="text-white/60 hover:text-white" size={20} />
-          </button>
-        </div>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/95 backdrop-blur-lg" />
 
-        <div className="flex-1 flex overflow-hidden">
-          <div className="flex-1 flex flex-col">
-            <div 
-              ref={chatContainerRef}
-              className="flex-1 overflow-y-auto p-4 scroll-smooth"
-              style={{ scrollBehavior: 'smooth' }}
+      <div className="relative w-full h-full md:h-[85vh] md:max-w-5xl bg-black md:rounded-2xl overflow-hidden">
+        <div className="h-full flex flex-col">
+          <div className="bg-[#1c1c1e] p-4 flex items-center justify-between shrink-0 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <Brain className="text-white/80" size={24} />
+              <div>
+                <h2 className="text-xl font-bold text-white">Oracle Prime</h2>
+                <p className="text-sm text-white/60">Advanced Analysis</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
             >
-              {isLoadingHistory ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader className="animate-spin text-white/60" size={24} />
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-white/60">
-                  <Brain size={32} className="mb-2" />
-                  <p>Start a conversation with Oracle Prime</p>
-                </div>
-              ) : (
-                messages.map((message, index) => (
-                  <Message key={index} {...message} />
-                ))
-              )}
-              {isProcessing && !showImageAnalysis && (
-                <div className="flex items-center gap-2 text-white/60 bg-[#1c1c1e] p-3 rounded-lg w-fit">
-                  <Loader className="animate-spin" size={16} />
-                  <span>Analyzing...</span>
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 border-t border-white/10 bg-black">
-              <div className="flex gap-2 items-end max-w-full">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-2 text-white/60 hover:text-white hover:bg-[#1c1c1e] rounded-lg transition-colors shrink-0"
-                  disabled={isProcessing}
-                >
-                  <ImagePlus size={20} />
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept="image/*"
-                  className="hidden"
-                />
-                <div className="flex-1 min-w-0">
-                  <textarea
-                    ref={inputRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onFocus={() => setIsInputFocused(true)}
-                    onBlur={() => setIsInputFocused(false)}
-                    placeholder="Ask anything..."
-                    className="w-full bg-[#1c1c1e] rounded-lg px-4 py-2 text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/20 resize-none"
-                    style={{
-                      minHeight: '44px',
-                      maxHeight: '120px',
-                    }}
-                    rows={1}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSubmit();
-                      }
-                    }}
-                    disabled={isProcessing}
-                  />
-                </div>
-                <button
-                  onClick={handleSubmit}
-                  disabled={isProcessing || !input.trim()}
-                  className="p-2 text-white/60 hover:text-white hover:bg-[#1c1c1e] rounded-lg transition-colors disabled:opacity-50 shrink-0"
-                >
-                  <Send size={20} />
-                </button>
-              </div>
-            </div>
+              <X className="text-white/60 hover:text-white" size={20} />
+            </button>
           </div>
 
-          {imagePreview && !showImageAnalysis && (
-            <div className="hidden md:block w-72 border-l border-white/10 p-4">
-              <div className="h-full flex flex-col">
-                <h3 className="text-white font-medium mb-3">Visual Analysis</h3>
-                <div className="relative flex-1 rounded-lg overflow-hidden">
-                  <img
-                    src={imagePreview}
-                    alt="Analysis"
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                  {isProcessing && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <Loader className="text-white animate-spin" size={32} />
-                    </div>
-                  )}
-                </div>
+          <div
+            ref={chatContainerRef}
+            className="flex-1 overflow-y-auto p-4 scroll-smooth"
+            style={{ scrollBehavior: "smooth" }}
+          >
+            {isLoadingHistory ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader className="animate-spin text-white/60" size={24} />
               </div>
+            ) : messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-white/60">
+                <Brain size={32} className="mb-2" />
+                <p>Start a conversation with Oracle Prime</p>
+              </div>
+            ) : (
+              messages.map((message, index) => (
+                <Message key={index} {...message} />
+              ))
+            )}
+            {isProcessing && !showImageAnalysis && (
+              <div className="flex items-center gap-2 text-white/60 bg-[#1c1c1e] p-3 rounded-lg w-fit">
+                <Loader className="animate-spin" size={16} />
+                <span>Processing...</span>
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 bg-[#1c1c1e] border-t border-white/10">
+            <div className="flex gap-2 items-end max-w-full">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors shrink-0"
+                disabled={isProcessing}
+              >
+                <ImagePlus size={20} />
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              <div className="flex-1 min-w-0">
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
+                  placeholder="Ask anything..."
+                  className="w-full bg-black/50 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/20 resize-none"
+                  style={{
+                    minHeight: "44px",
+                    maxHeight: "120px",
+                  }}
+                  rows={1}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit();
+                    }
+                  }}
+                  disabled={isProcessing}
+                />
+              </div>
+              <button
+                onClick={handleSubmit}
+                disabled={isProcessing || !input.trim()}
+                className="p-2 text-white/60 hover:text-white hover:bg-[#1c1c1e] rounded-lg transition-colors shrink-0 disabled:opacity-50"
+              >
+                <Send size={20} />
+              </button>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
