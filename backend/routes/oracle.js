@@ -51,7 +51,7 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
     );
     const userData = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
 
-    // Cria uma seção de contexto a partir das mensagens anteriores, se houver
+    // Cria uma seção de contexto a partir das mensagens anteriores, se houver.,.
     let contextSection = "";
     if (
       previousMessages &&
