@@ -47,46 +47,25 @@ const OraclePrime = ({ onClose }) => {
     return <UpgradePrompt onClose={onClose} />;
   }
 
-  // Carrega histórico ao montar
   useEffect(() => {
     const loadHistory = async () => {
       try {
         const response = await api.fetch(`/oracle-prime/history/${user.email}`);
         if (response.ok) {
           const history = await response.json();
-          const loadedMessages = history.flatMap((chat) => {
-            const resp = chat.response || {
-              analysis: "",
-              strategy: "",
-              triggers: [],
-              warnings: [],
-            };
-            const userMsg = {
+          const loadedMessages = history.flatMap((chat) => [
+            {
               content: chat.message || "Image Analysis",
               isUser: true,
               timestamp: chat.timestamp,
               hasImage: chat.hasImage,
-            };
-            const aiMsg = {
-              content: `Analysis:
-${resp.analysis || ""}
-
-Strategic Approach:
-${resp.strategy || ""}
-
-Key Triggers:
-${(resp.triggers || []).map((t) => `• ${t.type}: ${t.description}`).join("\n")}
-
-⚠️ Warnings:
-${(resp.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
+            },
+            {
+              content: chat.response,
               isUser: false,
               timestamp: chat.timestamp,
-            };
-            return [userMsg, aiMsg];
-          });
-          loadedMessages.sort(
-            (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-          );
+            },
+          ]);
           setMessages(loadedMessages);
         }
       } catch (error) {
@@ -98,46 +77,50 @@ ${(resp.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
     loadHistory();
   }, [user.email]);
 
-  // Redimensiona e comprime a imagem para evitar payload grande (erro 413)
+  const processImage = (file) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        const maxWidth = 800;
+        const maxHeight = 800;
+        let { width, height } = img;
+
+        if (width > maxWidth || height > maxHeight) {
+          const scale = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.floor(width * scale);
+          height = Math.floor(height * scale);
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const base64 = canvas.toDataURL("image/jpeg", 0.7);
+        URL.revokeObjectURL(img.src);
+        resolve(base64);
+      };
+    });
+  };
+
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
+
     try {
-      const objectUrl = URL.createObjectURL(file);
-      const img = new Image();
-      img.src = objectUrl;
-      await new Promise((resolve) => {
-        img.onload = resolve;
-      });
-      // Define tamanho máximo (800x800)
-      const maxWidth = 800;
-      const maxHeight = 800;
-      let { width, height } = img;
-      if (width > maxWidth || height > maxHeight) {
-        const scale = Math.min(maxWidth / width, maxHeight / height);
-        width = width * scale;
-        height = height * scale;
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, width, height);
-      // Compressão para JPEG com qualidade 0.7
-      const base64 = canvas.toDataURL("image/jpeg", 0.7);
-      URL.revokeObjectURL(objectUrl);
+      const base64 = await processImage(file);
       setImagePreview(base64);
       if (window.innerWidth < 768) {
         setShowMobileImage(true);
       }
-      // Envia a imagem processada para análise
       processInput(null, base64);
     } catch (error) {
       console.error("Error processing image:", error);
     }
   };
 
-  // Processa todas as mensagens chamando o backend para análise, sem fallback local
   const processInput = async (text = null, image = null) => {
     try {
       setIsProcessing(true);
@@ -150,6 +133,7 @@ ${(resp.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
         hasImage: !!image,
       };
       setMessages((prev) => [...prev, userMessage]);
+
       const response = await api.fetch("/oracle-prime/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -160,28 +144,20 @@ ${(resp.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`,
           previousMessages: messages,
         }),
       });
+
       if (!response.ok) {
         throw new Error("Failed to process request");
       }
+
       const data = await response.json();
-      const formattedResponse = `Analysis:
-${data.analysis || ""}
-
-Strategic Approach:
-${data.strategy || ""}
-
-Key Triggers:
-${(data.triggers || []).map((t) => `• ${t.type}: ${t.description}`).join("\n")}
-
-⚠️ Warnings:
-${(data.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
       const aiMessage = {
-        content: formattedResponse,
+        content: data.response,
         isUser: false,
-        timestamp: data.timestamp || new Date().toISOString(),
+        timestamp: data.timestamp,
       };
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
+      console.error("Error processing input:", error);
       setMessages((prev) => [
         ...prev,
         {
@@ -200,9 +176,7 @@ ${(data.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
 
   const handleSubmit = () => {
     if (!input.trim()) return;
-    const userInput = input.trim();
-    setInput("");
-    processInput(userInput);
+    processInput(input.trim());
   };
 
   useEffect(() => {
@@ -215,7 +189,6 @@ ${(data.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-lg flex md:items-center justify-center z-50">
       <div className="w-full h-full md:h-auto md:max-h-[80vh] md:max-w-4xl bg-black md:rounded-2xl shadow-2xl overflow-hidden">
-        {/* Header */}
         <div className="bg-[#1c1c1e] p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Brain className="text-white/80" size={24} />
@@ -232,7 +205,6 @@ ${(data.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
           </button>
         </div>
 
-        {/* Mobile Image Preview */}
         {showMobileImage && imagePreview && (
           <div className="md:hidden">
             <div className="relative h-48">
@@ -256,9 +228,7 @@ ${(data.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
           </div>
         )}
 
-        {/* Conteúdo Principal */}
         <div className="h-[calc(100%-64px)] md:h-[600px] flex">
-          {/* Seção do Chat */}
           <div className="flex-1 flex flex-col">
             <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4">
               {isLoadingHistory ? (
@@ -283,7 +253,6 @@ ${(data.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
               )}
             </div>
 
-            {/* Área de Input */}
             <div className="p-4 border-t border-white/10">
               <div className="flex gap-2">
                 <button
@@ -318,7 +287,6 @@ ${(data.warnings || []).map((w) => `• ${w.risk}: ${w.impact}`).join("\n")}`;
             </div>
           </div>
 
-          {/* Desktop Image Preview */}
           {imagePreview && !showMobileImage && (
             <div className="hidden md:block w-72 border-l border-white/10 p-4">
               <div className="h-full flex flex-col">

@@ -4,7 +4,6 @@ const openai = require("../config/openai");
 const fs = require("fs").promises;
 const path = require("path");
 
-// Middleware para verificar acesso
 const checkOracleAccess = async (req, res, next) => {
   try {
     const email = req.body.email || req.params.email;
@@ -35,12 +34,10 @@ const checkOracleAccess = async (req, res, next) => {
   }
 };
 
-// Rota de análise
 router.post("/analyze", checkOracleAccess, async (req, res) => {
   try {
     const { message, image, email, previousMessages } = req.body;
 
-    // Carregar dados do onboarding
     const onboardingPath = path.join(
       __dirname,
       "..",
@@ -51,74 +48,42 @@ router.post("/analyze", checkOracleAccess, async (req, res) => {
     );
     const userData = JSON.parse(await fs.readFile(onboardingPath, "utf8"));
 
-    // Cria uma seção de contexto a partir das mensagens anteriores, se houver.
-    let contextSection = "";
-    if (
-      previousMessages &&
-      Array.isArray(previousMessages) &&
-      previousMessages.length > 0
-    ) {
-      contextSection =
-        "Previous conversation context:\n" +
-        previousMessages
-          .map((m) => `${m.isUser ? "User" : "Assistant"}: ${m.content}`)
-          .join("\n") +
-        "\n";
+    let conversationContext = "";
+    if (previousMessages?.length > 0) {
+      conversationContext = previousMessages
+        .map((m) => `${m.isUser ? "User" : "Assistant"}: ${m.content}`)
+        .join("\n\n");
     }
 
-    // Se uma imagem for fornecida (base64), adiciona um indicador textual
-    let imageIndicator = "";
-    if (image) {
-      imageIndicator = "\n\n[IMAGE PROVIDED FOR ANALYSIS]";
-    }
+    const userContext = `User Context:
+• Objective: ${userData.objective}
+• Time Without Contact: ${userData.timeWithoutContact}
+• Separation Cause: ${userData.separationCause}
+• Current Interest: ${userData.currentInterest}
+• Current Status: ${userData.currentStatus}`;
 
-    // Monta o prompt completo com os dados do onboarding, o contexto e a indicação de imagem
-    let prompt = `Based on the following user information:
-Objective: ${userData.objective}
-Time Without Contact: ${userData.timeWithoutContact}
-Separation Cause: ${userData.separationCause}
-Current Interest: ${userData.currentInterest}
-Current Status: ${userData.currentStatus}
+    const prompt = `${userContext}
 
-${contextSection}
 ${
-  image
-    ? "Analyze the provided image, focusing on emotional signals, body language, and relationship dynamics. Then, "
+  conversationContext
+    ? `Previous conversation:\n${conversationContext}\n\n`
     : ""
-}
-Respond naturally as a relationship expert, taking into account the conversation context above. Consider the user's situation and provide appropriate guidance.
-${message ? `The user says: "${message}"` : ""}${imageIndicator}
-
-Return ONLY a VALID JSON OBJECT in this format:
-{
-  "analysis": "Your conversational response here",
-  "strategy": "Additional context or suggestion if relevant",
-  "triggers": [
-    {
-      "type": "emotional response",
-      "description": "how they might feel"
+}${image ? "[IMAGE PROVIDED FOR ANALYSIS]\n\n" : ""}${
+      message ? `User: ${message}` : ""
     }
-  ],
-  "warnings": [
-    {
-      "risk": "potential concern",
-      "impact": "why to be careful"
-    }
-  ]
-}`;
 
-    // Envia o prompt como uma única mensagem de texto
+As a relationship expert, provide a thoughtful and empathetic response considering the user's context and any provided image. Format your response in a clear and organized way.`;
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini-2024-07-18",
       messages: [
         {
           role: "system",
           content:
-            "You are a relationship expert who provides responses EXCLUSIVELY in a valid JSON format.",
+            "You are an empathetic relationship expert providing guidance based on the user's specific situation.",
         },
         {
           role: "user",
-          // Enviamos apenas o prompt de texto; a imagem já foi processada no frontend
           content: prompt,
         },
       ],
@@ -128,10 +93,9 @@ Return ONLY a VALID JSON OBJECT in this format:
       frequency_penalty: 0.3,
     });
 
-    const response = JSON.parse(completion.choices[0].message.content);
+    const response = completion.choices[0].message.content;
     const timestamp = new Date().toISOString();
 
-    // Salvar no histórico
     const chatDir = path.join(
       __dirname,
       "..",
@@ -146,12 +110,7 @@ Return ONLY a VALID JSON OBJECT in this format:
       timestamp,
       message: message || "Image Analysis",
       hasImage: !!image,
-      response: {
-        analysis: response.analysis || "",
-        strategy: response.strategy || "",
-        triggers: response.triggers || [],
-        warnings: response.warnings || [],
-      },
+      response,
     };
 
     await fs.writeFile(
@@ -160,7 +119,7 @@ Return ONLY a VALID JSON OBJECT in this format:
     );
 
     res.json({
-      ...response,
+      response,
       timestamp,
     });
   } catch (error) {
@@ -172,7 +131,6 @@ Return ONLY a VALID JSON OBJECT in this format:
   }
 });
 
-// Rota de histórico
 router.get("/history/:email", checkOracleAccess, async (req, res) => {
   try {
     const chatDir = path.join(
@@ -193,7 +151,6 @@ router.get("/history/:email", checkOracleAccess, async (req, res) => {
       })
     );
 
-    // Ordenar do mais antigo para o mais novo
     const sortedChats = chats.sort(
       (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
     );
